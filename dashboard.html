@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MANCOM · Submissions Dashboard</title>
+<style>
+  :root {
+    --ink:#1C2321; --sub:#5C6863; --line:#DDE3DE; --bg:#F6F5F1; --panel:#FFFFFF;
+    --deep:#12433A; --deep2:#1B5C4F; --tint:#EAF1EE;
+    --ok:#1E7A4F; --ok-bg:#E4F1E9; --ok-line:#A9D4BD;
+    --none:#B5541A; --none-bg:#FCEADD; --none-line:#EFBF97;
+    --part:#B8860B; --part-bg:#FBF2D9; --part-line:#E9D28C;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Iowan Old Style','Georgia',serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 18px 70px; }
+  header { background:var(--deep); color:#F3F0E6; padding:30px 18px 26px; }
+  header .inner { max-width:1180px; margin:0 auto; display:flex; justify-content:space-between;
+    align-items:flex-start; gap:16px; flex-wrap:wrap; }
+  header .eyebrow { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; font-weight:600;
+    color:#BFE0D5; margin-bottom:7px; letter-spacing:.04em; }
+  header h1 { font-size:clamp(24px,4.2vw,34px); font-weight:600; margin:0 0 8px; line-height:1.15; }
+  header p { font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px; color:#CFE3DC; max-width:60ch;
+    line-height:1.5; margin:0; }
+  .backlink { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; font-weight:700;
+    color:#F3F0E6; text-decoration:none; border:1.5px solid #ffffff55; padding:9px 14px; border-radius:3px;
+    white-space:nowrap; }
+  .backlink:hover { background:#ffffff18; }
+
+  .controls { margin-top:-22px; background:var(--panel); border:1px solid var(--line); border-radius:4px;
+    box-shadow:0 16px 36px rgba(18,67,58,.13); padding:16px 18px; display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; align-items:end; }
+  .ctl label { display:block; font-family:'Helvetica Neue',Arial,sans-serif; font-size:11px;
+    font-weight:700; color:var(--sub); margin-bottom:6px; letter-spacing:.02em; }
+  .ctl select, .ctl input { width:100%; font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px;
+    padding:10px 12px; border:1.5px solid var(--line); border-radius:3px; background:#fff; color:var(--ink); }
+  .btn { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; font-weight:700; cursor:pointer;
+    padding:10px 14px; border-radius:3px; border:1.5px solid var(--deep); background:var(--deep); color:#fff; }
+  .btn.ghost { background:#fff; color:var(--deep); }
+
+  #status { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; color:var(--sub);
+    margin:14px 2px 0; }
+  #status.err { color:var(--none); }
+
+  .divider { display:flex; align-items:center; gap:12px; margin:30px 0 16px; }
+  .divider span { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11.5px; font-weight:700;
+    color:var(--sub); white-space:nowrap; letter-spacing:.05em; }
+  .divider .rule { height:1px; background:var(--line); flex:1; }
+
+  /* stat tiles */
+  #stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:18px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-top:4px solid var(--deep);
+    border-radius:4px; padding:16px; }
+  .stat .n { font-size:32px; font-weight:600; line-height:1; }
+  .stat .l { font-family:'Helvetica Neue',Arial,sans-serif; font-size:10.5px; font-weight:700;
+    color:var(--sub); margin-top:8px; letter-spacing:.03em; }
+  .stat.warn { border-top-color:var(--none); }
+  .stat.warn .n { color:var(--none); }
+
+  /* progress bar */
+  .progwrap { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:16px 18px; }
+  .progwrap .pt { display:flex; justify-content:space-between; font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12.5px; color:var(--sub); margin-bottom:8px; }
+  .progwrap .pt b { color:var(--ink); }
+  .progbar { height:14px; border-radius:7px; background:var(--none-bg); overflow:hidden; display:flex; }
+  .progbar i { display:block; height:100%; background:var(--ok); }
+
+  /* two-column layout for the ranked lists */
+  #panels { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  @media (max-width:820px) { #panels { grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:16px 18px; }
+  .panel h3 { margin:0 0 4px; font-size:16px; }
+  .panel .sub { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11.5px; color:var(--sub); margin-bottom:12px; }
+  .rank { list-style:none; margin:0; padding:0; }
+  .rank li { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line);
+    font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; }
+  .rank li:last-child { border-bottom:none; }
+  .rank .rn { flex:1; }
+  .rank .rn small { display:block; color:var(--sub); font-size:10.5px; margin-top:1px; }
+  .rank .rbarwrap { width:90px; height:7px; border-radius:4px; background:var(--line); overflow:hidden; flex:none; }
+  .rank .rbar { height:100%; background:var(--ok); }
+  .rank.outstanding .rbar { background:var(--none); }
+  .rank .rv { flex:none; font-weight:700; width:44px; text-align:right; }
+
+  /* full table */
+  table { width:100%; border-collapse:collapse; background:var(--panel); font-family:'Helvetica Neue',Arial,sans-serif;
+    margin-top:16px; }
+  thead th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.02em; color:var(--sub);
+    border-bottom:2px solid var(--ink); padding:9px 10px; cursor:pointer; user-select:none; white-space:nowrap; }
+  thead th:hover { color:var(--deep); }
+  thead th.active::after { content:' \25BE'; }
+  tbody td { font-size:13px; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:hover { background:#FBFAF6; }
+  td.name { font-weight:700; }
+  .badge { font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:3px; border:1px solid; white-space:nowrap; }
+  .badge.ok { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
+  .badge.nil { color:var(--none); background:var(--none-bg); border-color:var(--none-line); }
+  .badge.part { color:var(--part); background:var(--part-bg); border-color:var(--part-line); }
+  tbody tr.hide { display:none; }
+
+  #drop { margin-top:16px; border:1.5px dashed var(--line); border-radius:4px; padding:14px;
+    text-align:center; font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; color:var(--sub);
+    cursor:pointer; background:#fff; }
+  #drop.over { border-color:var(--deep); background:var(--tint); }
+
+  @media print {
+    header .backlink, .controls, #drop, .divider, #status { display:none; }
+    body { background:#fff; }
+    #panels { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div>
+      <div class="eyebrow">MANCOM · WECA YOUTH DEPARTMENT</div>
+      <h1>Submissions Dashboard</h1>
+      <p>A single view across every Area — who has reported, who hasn't, and how the programme is trending. Reads the same workbook as the report cards.</p>
+    </div>
+    <a class="backlink" href="submissions.html">← Area Report Cards</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="ctl">
+      <label for="prog">Programme</label>
+      <select id="prog"></select>
+    </div>
+    <div class="ctl">
+      <label for="scope">Reporting scope</label>
+      <select id="scope">
+        <option value="all">All submissions</option>
+        <option value="Area Headquaters">Central — Area HQ only</option>
+        <option value="Zone">Zonal</option>
+        <option value="Branch">Branch-based</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="q">Search areas / reps</label>
+      <input id="q" type="text" placeholder="Area, leader or rep…">
+    </div>
+    <div class="ctl">
+      <label>&nbsp;</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="refresh">Refresh live</button>
+        <button class="btn ghost" id="print">Print / PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="stats"></div>
+
+  <div class="divider"><span>OVERALL PROGRESS</span><div class="rule"></div></div>
+  <div class="progwrap">
+    <div class="pt"><span>Areas reporting</span><b id="progtext"></b></div>
+    <div class="progbar"><i id="progfill"></i></div>
+  </div>
+
+  <div id="panels"></div>
+
+  <div class="divider"><span>EVERY AREA</span><div class="rule"></div></div>
+  <table>
+    <thead><tr>
+      <th data-k="area">Area</th><th data-k="rep">MANCOM Rep</th>
+      <th data-k="count">Submitted</th><th data-k="people">Attendance</th>
+      <th data-k="blessings">Blessings</th><th data-k="state">Status</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div id="drop">Drop the <b>MANCOM Submissions workbook (.xlsx)</b> here, or click to choose a file
+    <input id="file" type="file" accept=".xlsx" hidden>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CONFIG = {
+    API_URL: 'https://script.google.com/macros/s/AKfycbytS8yzg1hRdGi5YhXLe0DKGi7SJlfOFjE_tETmAN6wq6d2b29yqd4eb1FZomli1dIgew/exec',
+    REFRESH_MINUTES: 0
+  };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  }
+  function norm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function yes(v) { var s = norm(v); return s === 'yes' || s === 'y' || s === 'true' || s === '1'; }
+
+  function objects(rows, map, requiredField) {
+    if (!rows || rows.length < 2) return [];
+    var head = rows[0].map(function (h) { return norm(h).replace(/\n/g, ' '); });
+    var idx = {};
+    Object.keys(map).forEach(function (f) {
+      idx[f] = -1;
+      var keys = map[f];
+      for (var k = 0; k < keys.length && idx[f] < 0; k++) {
+        for (var i = 0; i < head.length; i++) {
+          if (head[i] === keys[k] || head[i].indexOf(keys[k]) === 0) { idx[f] = i; break; }
+        }
+      }
+    });
+    var out = [];
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r]; if (!row) continue;
+      var o = {};
+      Object.keys(map).forEach(function (f) { o[f] = idx[f] >= 0 ? row[idx[f]] : ''; });
+      if (requiredField && !String(o[requiredField] || '').trim()) continue;
+      out.push(o);
+    }
+    return out;
+  }
+
+  var MAP_PROG = { key:['key'], sheet:['sheet name','sheet'], label:['label','programme','program'],
+                   scope:['scope'], active:['active'] };
+  var MAP_AREA = { area:['area'], leader:['area leader','leader'], leaderPhone:['leader phone'],
+                   rep:['mancom rep','rep','representative'], repPhone:['rep phone'],
+                   expected:['expected'] };
+  var MAP_BRANCH = { area:['area'], branch:['branch / location','branch','location'],
+                     cat:['category'], alias:['alias'] };
+  var MAP_RESP = {
+    area:['area'], cat:['category of church location','category'],
+    loc:['branch location','branch','location'],
+    name:['name (firstname, lastname)','name','correspondent'],
+    phone:['phone number','phone'], held:['date held','date'],
+    m:['teenage male'], f:['teenage female'], p:['parents'], tot:['total'],
+    sal:['salvation'], san:['sanctification'], hg:['baptism of the holy ghost','holy ghost'],
+    heal:['healing'], re:['re-anointing','reanointing'], oth:['other blessings','others']
+  };
+
+  var PROGRAMMES = [], AREAS = [], BRANCHES = [], RECORDS = [], SOURCE = '';
+  var WB = null;
+  var MODEL = [], SORT = { k:'state', dir:1 };
+
+  /* -------- same per-area model as submissions.html -------- */
+  function build(scope, query) {
+    var expected = {};
+    BRANCHES.forEach(function (b) {
+      if (!String(b.area || '').trim() || !String(b.branch || '').trim()) return;
+      if (scope !== 'all' && norm(b.cat) !== norm(scope)) return;
+      var k = norm(b.area);
+      (expected[k] = expected[k] || []).push({ key: norm(b.branch), alias: norm(b.alias) });
+    });
+    var byArea = {};
+    AREAS.forEach(function (m) {
+      if (!String(m.area || '').trim()) return;
+      byArea[norm(m.area)] = { meta: m, area: String(m.area).trim(), got: [], missing: 0, extra: false };
+    });
+    RECORDS.forEach(function (r) {
+      if (scope !== 'all' && norm(r.cat) !== norm(scope)) return;
+      var k = norm(r.area);
+      if (!byArea[k]) byArea[k] = { meta: { area: String(r.area).trim(), leader:'', rep:'', expected:'' },
+                                     area: String(r.area).trim(), got: [], missing: 0, extra: true };
+      var bucket = byArea[k];
+      var raw = norm(r.loc) || norm(r.name);
+      var list = expected[k] || [], key = raw;
+      for (var i = 0; i < list.length; i++) if (list[i].key === raw || list[i].alias === raw) { key = list[i].key; break; }
+      var seen = bucket.got.indexOf(key) >= 0;
+      if (seen) return;
+      bucket.got.push(key);
+      bucket['_' + key] = { tot: num(r.tot) || (num(r.m) + num(r.f) + num(r.p)),
+        bl: num(r.sal) + num(r.san) + num(r.hg) + num(r.heal) + num(r.re) + num(r.oth) };
+    });
+    var out = Object.keys(byArea).map(function (k) { return byArea[k]; });
+    out.forEach(function (a) {
+      a.count = a.got.length;
+      a.expected = num(a.meta.expected) || (expected[norm(a.area)] || []).length || a.count;
+      a.people = 0; a.blessings = 0;
+      a.got.forEach(function (key) { var d = a['_' + key]; if (d) { a.people += d.tot; a.blessings += d.bl; } });
+      a.state = a.count === 0 ? 'nil' : (a.expected && a.count < a.expected ? 'part' : 'ok');
+      a.search = norm(a.area + ' ' + a.meta.rep + ' ' + a.meta.leader);
+    });
+    if (query) out = out.filter(function (a) { return a.search.indexOf(norm(query)) >= 0; });
+    return out;
+  }
+
+  /* -------- render -------- */
+  var statsEl = document.getElementById('stats'), statusEl = document.getElementById('status');
+  var panelsEl = document.getElementById('panels'), tbody = document.getElementById('tbody');
+  function setStatus(t, cls) { statusEl.textContent = t; statusEl.className = cls || ''; }
+
+  function tile(n, l, warn) { return '<div class="stat' + (warn ? ' warn' : '') + '"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>'; }
+
+  function renderStats(list) {
+    var reporting = list.filter(function (a) { return a.count > 0; }).length;
+    var complete = list.filter(function (a) { return a.state === 'ok'; }).length;
+    var outstanding = list.length - reporting;
+    var people = list.reduce(function (s, a) { return s + a.people; }, 0);
+    var bl = list.reduce(function (s, a) { return s + a.blessings; }, 0);
+    var locs = list.reduce(function (s, a) { return s + a.count; }, 0);
+    statsEl.innerHTML =
+      tile(reporting + ' / ' + list.length, 'AREAS REPORTING') +
+      tile(complete, 'AREAS FULLY IN') +
+      tile(outstanding, 'AREAS SILENT', outstanding > 0) +
+      tile(locs, 'LOCATIONS SUBMITTED') +
+      tile(people.toLocaleString(), 'TOTAL ATTENDANCE') +
+      tile(bl.toLocaleString(), 'BLESSINGS RECORDED');
+
+    var pct = list.length ? Math.round((reporting / list.length) * 100) : 0;
+    document.getElementById('progfill').style.width = pct + '%';
+    document.getElementById('progtext').textContent = reporting + ' of ' + list.length + ' areas (' + pct + '%)';
+  }
+
+  function rankList(items, valueOf, maxOf, fmt, cls) {
+    if (!items.length) return '<p style="font-family:Helvetica Neue,Arial,sans-serif;font-size:12.5px;color:var(--sub);">None.</p>';
+    var max = maxOf || Math.max.apply(null, items.map(valueOf).concat([1]));
+    return '<ul class="rank ' + (cls || '') + '">' + items.map(function (a) {
+      var v = valueOf(a), pct = max ? Math.round((v / max) * 100) : 0;
+      return '<li><span class="rn">' + esc(a.area) + '<small>' + esc(a.meta.rep || 'No rep on file') + '</small></span>' +
+        '<span class="rbarwrap"><i class="rbar" style="width:' + pct + '%"></i></span>' +
+        '<span class="rv">' + fmt(v) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function renderPanels(list) {
+    var outstanding = list.filter(function (a) { return a.count === 0; })
+      .sort(function (x, y) { return x.area.localeCompare(y.area); });
+    var top = list.slice().sort(function (x, y) { return y.people - x.people; }).slice(0, 8);
+    panelsEl.innerHTML =
+      '<div class="panel"><h3>Outstanding areas</h3><div class="sub">' + outstanding.length + ' area(s) with zero submissions — chase these first.</div>' +
+      rankList(outstanding, function () { return 0; }, 1, function () { return '—'; }, 'outstanding') + '</div>' +
+      '<div class="panel"><h3>Top attendance</h3><div class="sub">Ranked by people reported present.</div>' +
+      rankList(top, function (a) { return a.people; }, null, function (v) { return v.toLocaleString(); }) + '</div>';
+  }
+
+  function badge(a) {
+    if (a.state === 'nil') return '<span class="badge nil">No submission</span>';
+    if (a.state === 'part') return '<span class="badge part">' + a.count + ' of ' + a.expected + '</span>';
+    return '<span class="badge ok">' + a.count + ' of ' + a.expected + '</span>';
+  }
+
+  function renderTable(list) {
+    var sorted = list.slice().sort(function (x, y) {
+      var kx = SORT.k === 'state' ? { nil:0, part:1, ok:2 }[x.state] : x[SORT.k];
+      var ky = SORT.k === 'state' ? { nil:0, part:1, ok:2 }[y.state] : y[SORT.k];
+      if (typeof kx === 'string') return kx.localeCompare(ky) * SORT.dir;
+      return (kx - ky) * SORT.dir;
+    });
+    tbody.innerHTML = sorted.map(function (a) {
+      return '<tr><td class="name">' + esc(a.area) + '</td><td>' + esc(a.meta.rep || '—') + '</td>' +
+        '<td>' + a.count + ' / ' + a.expected + '</td><td>' + a.people.toLocaleString() + '</td>' +
+        '<td>' + a.blessings + '</td><td>' + badge(a) + '</td></tr>';
+    }).join('');
+    document.querySelectorAll('thead th').forEach(function (th) {
+      th.classList.toggle('active', th.getAttribute('data-k') === SORT.k);
+    });
+  }
+
+  function paint() {
+    var scope = document.getElementById('scope').value;
+    var q = document.getElementById('q').value.trim();
+    MODEL = build(scope, q);
+    renderStats(MODEL); renderPanels(MODEL); renderTable(MODEL);
+  }
+
+  document.querySelectorAll('thead th').forEach(function (th) {
+    th.onclick = function () {
+      var k = th.getAttribute('data-k');
+      SORT.dir = (SORT.k === k) ? -SORT.dir : 1;
+      SORT.k = k;
+      renderTable(MODEL);
+    };
+  });
+
+  /* -------- loading (identical pattern to submissions.html) -------- */
+  function jsonp(url, cb, errCb) {
+    var name = 'mancomDashCB' + Date.now();
+    var s = document.createElement('script');
+    var timer = setTimeout(function () { cleanup(); errCb(new Error('Live request timed out')); }, 20000);
+    function cleanup() { clearTimeout(timer); try { delete window[name]; } catch (e) { window[name] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+    window[name] = function (data) { cleanup(); cb(data); };
+    s.onerror = function () { cleanup(); errCb(new Error('Could not reach the Google Sheet service')); };
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&t=' + Date.now();
+    document.body.appendChild(s);
+  }
+  function fetchLive(cb, errCb) {
+    var url = CONFIG.API_URL;
+    if (!url || url.indexOf('PASTE_') === 0) { errCb(new Error('No API_URL configured')); return; }
+    if (typeof fetch === 'function') {
+      fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now())
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(cb).catch(function () { jsonp(url, cb, errCb); });
+    } else { jsonp(url, cb, errCb); }
+  }
+  function fillProgrammes(keepIndex) {
+    var sel = document.getElementById('prog');
+    var want = keepIndex != null ? keepIndex : sel.selectedIndex;
+    sel.innerHTML = '';
+    PROGRAMMES.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.key; o.textContent = p.label || p.key;
+      sel.appendChild(o);
+    });
+    sel.selectedIndex = (want >= 0 && want < PROGRAMMES.length) ? want : 0;
+    applyScopeDefault();
+  }
+  function applyScopeDefault() {
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    if (!p) return;
+    var s = norm(p.scope);
+    document.getElementById('scope').value = s === 'central' ? 'Area Headquaters' : (s === 'zonal' ? 'Zone' : 'all');
+  }
+  function finish(tag) {
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    setStatus(((p && p.label) || 'Programme') + ' \u00b7 ' + RECORDS.length + ' responses \u00b7 ' +
+      AREAS.length + ' areas on file \u00b7 from the ' + tag + ' \u00b7 ' + new Date().toLocaleString());
+    paint();
+  }
+  function loadLive(silent) {
+    if (!silent) setStatus('Fetching the live Google Sheet\u2026');
+    fetchLive(function (res) {
+      try {
+        if (!res || res.ok === false) throw new Error(res && res.error ? res.error : 'Bad response');
+        PROGRAMMES = objects(res.programmes, MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
+        AREAS = objects(res.areas, MAP_AREA, 'area');
+        BRANCHES = objects(res.branches, MAP_BRANCH, 'area');
+        if (!PROGRAMMES.length) throw new Error('No active programme found on the Programmes sheet');
+        fillProgrammes(null);
+        var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+        var raw = res[p.key];
+        if (!raw || !raw.length) throw new Error('The live feed has no "' + p.key + '" responses yet');
+        RECORDS = objects(raw, MAP_RESP, 'area');
+        SOURCE = 'live'; finish('live sheet');
+      } catch (e) { setStatus('\u26a0 ' + e.message + ' \u2014 drop the workbook below to work offline', 'err'); }
+    }, function (err) {
+      setStatus('\u26a0 Live sheet unavailable (' + err.message + ') \u2014 drop the workbook below to work offline', 'err');
+    });
+  }
+
+  /* -------- offline .xlsx fallback (unchanged reader) -------- */
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+  async function inflateRaw(bytes) {
+    var ds = new DecompressionStream('deflate-raw');
+    var stream = new Blob([bytes]).stream().pipeThrough(ds);
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function unzip(arrayBuffer) {
+    var b = new Uint8Array(arrayBuffer), eocd = -1;
+    for (var i = b.length - 22; i >= Math.max(0, b.length - 66000); i--) {
+      if (u32(b, i) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Not a valid .xlsx (zip) file');
+    var count = u16(b, eocd + 10), cdOff = u32(b, eocd + 16), files = {}, p = cdOff;
+    for (var n = 0; n < count; n++) {
+      if (u32(b, p) !== 0x02014b50) break;
+      var method = u16(b, p + 10), csize = u32(b, p + 20);
+      var nlen = u16(b, p + 28), elen = u16(b, p + 30), clen = u16(b, p + 32), lho = u32(b, p + 42);
+      files[new TextDecoder().decode(b.subarray(p + 46, p + 46 + nlen))] = { method: method, csize: csize, lho: lho };
+      p += 46 + nlen + elen + clen;
+    }
+    async function read(name) {
+      var f = files[name]; if (!f) return null;
+      var q = f.lho, nl = u16(b, q + 26), el = u16(b, q + 28);
+      var data = b.subarray(q + 30 + nl + el, q + 30 + nl + el + f.csize);
+      return new TextDecoder().decode(f.method === 0 ? data : await inflateRaw(data));
+    }
+    return { read: read, names: Object.keys(files) };
+  }
+  function colIndex(ref) {
+    var m = /^([A-Z]+)/.exec(ref); if (!m) return 0;
+    var c = 0; for (var i = 0; i < m[1].length; i++) c = c * 26 + (m[1].charCodeAt(i) - 64);
+    return c - 1;
+  }
+  async function readXlsx(arrayBuffer) {
+    var z = await unzip(arrayBuffer), parser = new DOMParser();
+    var wbXml = parser.parseFromString(await z.read('xl/workbook.xml'), 'application/xml');
+    var relsXml = parser.parseFromString(await z.read('xl/_rels/workbook.xml.rels'), 'application/xml');
+    var rels = {};
+    Array.prototype.forEach.call(relsXml.getElementsByTagName('*'), function (r) {
+      if (r.localName === 'Relationship') rels[r.getAttribute('Id')] = r.getAttribute('Target');
+    });
+    var sheets = {};
+    Array.prototype.forEach.call(wbXml.getElementsByTagName('*'), function (s) {
+      if (s.localName !== 'sheet') return;
+      var rid = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+      var target = rels[rid]; if (!target) return;
+      if (target.indexOf('/') === 0) target = target.slice(1); else if (target.indexOf('xl/') !== 0) target = 'xl/' + target;
+      sheets[s.getAttribute('name')] = target;
+    });
+    var sstRaw = await z.read('xl/sharedStrings.xml'), sst = [];
+    if (sstRaw) {
+      var sstXml = parser.parseFromString(sstRaw, 'application/xml');
+      Array.prototype.forEach.call(sstXml.getElementsByTagName('*'), function (si) {
+        if (si.localName !== 'si') return;
+        var txt = '';
+        Array.prototype.forEach.call(si.getElementsByTagName('*'), function (t) {
+          if (t.localName === 't') txt += t.textContent;
+        });
+        sst.push(txt);
+      });
+    }
+    async function rows(sheetName) {
+      var path = sheets[sheetName]; if (!path) return null;
+      var xml = parser.parseFromString(await z.read(path), 'application/xml'), out = [];
+      Array.prototype.forEach.call(xml.getElementsByTagName('*'), function (row) {
+        if (row.localName !== 'row') return;
+        var arr = [];
+        Array.prototype.forEach.call(row.childNodes, function (c) {
+          if (c.localName !== 'c') return;
+          var ci = colIndex(c.getAttribute('r') || ''), t = c.getAttribute('t'), v = null;
+          if (t === 'inlineStr') v = c.textContent;
+          else {
+            for (var k = 0; k < c.childNodes.length; k++) {
+              if (c.childNodes[k].localName === 'v') { v = c.childNodes[k].textContent; break; }
+            }
+            if (v != null) {
+              if (t === 's') v = sst[parseInt(v, 10)];
+              else if (t !== 'str' && t !== 'b') { var num = parseFloat(v); if (!isNaN(num)) v = num; }
+            }
+          }
+          arr[ci] = v;
+        });
+        out.push(arr);
+      });
+      return out;
+    }
+    return { rows: rows, sheetNames: Object.keys(sheets) };
+  }
+
+
+  function findSheet(names, wanted) {
+    for (var i = 0; i < names.length; i++) if (norm(names[i]) === norm(wanted)) return names[i];
+    for (var j = 0; j < names.length; j++) if (norm(names[j]).indexOf(norm(wanted)) === 0) return names[j];
+    return null;
+  }
+  async function loadFromWorkbook(wb, keepIndex) {
+    var n = wb.sheetNames;
+    var ps = findSheet(n, 'Programmes'), as = findSheet(n, 'Areas'), bs = findSheet(n, 'Branches');
+    if (!ps || !as || !bs) throw new Error('Workbook needs Programmes, Areas and Branches sheets. Found: ' + n.join(', '));
+    PROGRAMMES = objects(await wb.rows(ps), MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
+    AREAS = objects(await wb.rows(as), MAP_AREA, 'area');
+    BRANCHES = objects(await wb.rows(bs), MAP_BRANCH, 'area');
+    if (!PROGRAMMES.length) throw new Error('No programme on the Programmes sheet has Active set to YES');
+    fillProgrammes(keepIndex);
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    var rs = findSheet(n, p.sheet) || findSheet(n, 'Form responses 1');
+    if (!rs) throw new Error('No sheet named "' + p.sheet + '" in this workbook');
+    RECORDS = objects(await wb.rows(rs), MAP_RESP, 'area');
+    SOURCE = 'file'; finish('uploaded workbook');
+  }
+  async function handleFile(file) {
+    setStatus('Reading ' + file.name + '\u2026');
+    try {
+      if (typeof DecompressionStream === 'undefined')
+        throw new Error('This browser cannot unpack .xlsx \u2014 use Chrome, Edge, or Safari 16.4+');
+      WB = await readXlsx(await file.arrayBuffer());
+      await loadFromWorkbook(WB, null);
+    } catch (e) { setStatus('\u26a0 ' + e.message, 'err'); }
+  }
+
+  document.getElementById('prog').onchange = function () {
+    applyScopeDefault();
+    if (SOURCE === 'file' && WB) { loadFromWorkbook(WB, this.selectedIndex).catch(function (e) { setStatus('\u26a0 ' + e.message, 'err'); }); }
+    else { loadLive(false); }
+  };
+  document.getElementById('scope').onchange = paint;
+  document.getElementById('q').oninput = paint;
+  document.getElementById('refresh').onclick = function () { loadLive(false); };
+  document.getElementById('print').onclick = function () { window.print(); };
+
+  var drop = document.getElementById('drop'), input = document.getElementById('file');
+  drop.onclick = function () { input.click(); };
+  input.onchange = function () { if (input.files[0]) handleFile(input.files[0]); };
+  drop.ondragover = function (e) { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = function () { drop.classList.remove('over'); };
+  drop.ondrop = function (e) {
+    e.preventDefault(); drop.classList.remove('over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  };
+
+  loadLive(false);
+  if (CONFIG.REFRESH_MINUTES > 0) setInterval(function () { loadLive(true); }, CONFIG.REFRESH_MINUTES * 60000);
+})();
+</script>
+</body>
+</html>

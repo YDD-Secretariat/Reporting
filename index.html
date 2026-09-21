@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MANCOM · Area Submission Report Cards</title>
+<style>
+  :root {
+    --ink:#1C2321; --sub:#5C6863; --line:#DDE3DE; --bg:#F6F5F1; --panel:#FFFFFF;
+    --deep:#12433A; --deep2:#1B5C4F; --tint:#EAF1EE;
+    --ok:#1E7A4F; --ok-bg:#E4F1E9; --ok-line:#A9D4BD;
+    --none:#B5541A; --none-bg:#FCEADD; --none-line:#EFBF97;
+    --part:#B8860B; --part-bg:#FBF2D9; --part-line:#E9D28C;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Iowan Old Style','Georgia',serif; background:var(--bg); color:var(--ink); }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 18px 70px; }
+  header { background:var(--deep); color:#F3F0E6; padding:30px 18px 26px; }
+  header .inner { max-width:1180px; margin:0 auto; }
+  header .eyebrow { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; font-weight:600;
+    color:#BFE0D5; margin-bottom:7px; letter-spacing:.04em; }
+  header h1 { font-size:clamp(24px,4.2vw,34px); font-weight:600; margin:0 0 8px; line-height:1.15; }
+  header p { font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px; color:#CFE3DC; max-width:60ch;
+    line-height:1.5; margin:0; }
+
+  .controls { margin-top:-22px; background:var(--panel); border:1px solid var(--line); border-radius:4px;
+    box-shadow:0 16px 36px rgba(18,67,58,.13); padding:16px 18px; display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; align-items:end; }
+  .ctl label { display:block; font-family:'Helvetica Neue',Arial,sans-serif; font-size:11px;
+    font-weight:700; color:var(--sub); margin-bottom:6px; letter-spacing:.02em; }
+  .ctl select, .ctl input { width:100%; font-family:'Helvetica Neue',Arial,sans-serif; font-size:14px;
+    padding:10px 12px; border:1.5px solid var(--line); border-radius:3px; background:#fff; color:var(--ink); }
+  .btnrow { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; font-weight:700; cursor:pointer;
+    padding:10px 14px; border-radius:3px; border:1.5px solid var(--deep); background:var(--deep); color:#fff; }
+  .btn.ghost { background:#fff; color:var(--deep); }
+  .btn:hover { opacity:.9; }
+
+  #status { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; color:var(--sub);
+    margin:14px 2px 0; }
+  #status.err { color:var(--none); }
+
+  #totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:18px 0 6px; }
+  .tot { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:12px 14px; }
+  .tot .n { font-size:26px; font-weight:600; line-height:1; }
+  .tot .l { font-family:'Helvetica Neue',Arial,sans-serif; font-size:10.5px; font-weight:700;
+    color:var(--sub); margin-top:6px; letter-spacing:.03em; }
+
+  .divider { display:flex; align-items:center; gap:12px; margin:30px 0 16px; }
+  .divider span { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11.5px; font-weight:700;
+    color:var(--sub); white-space:nowrap; letter-spacing:.05em; }
+  .divider .rule { height:1px; background:var(--line); flex:1; }
+
+  #cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-top:4px solid var(--deep);
+    border-radius:4px; box-shadow:0 6px 18px rgba(18,67,58,.07); padding:16px 16px 14px;
+    display:flex; flex-direction:column; }
+  .card.nil { border-top-color:var(--none); }
+  .card.part { border-top-color:var(--part); }
+  .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    border-bottom:2px solid var(--ink); padding-bottom:9px; margin-bottom:11px; }
+  .card-head h3 { margin:0; font-size:19px; font-weight:600; line-height:1.2; }
+  .pill { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11px; font-weight:700; white-space:nowrap;
+    padding:4px 9px; border-radius:3px; border:1px solid; }
+  .pill.ok { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
+  .pill.nil { color:var(--none); background:var(--none-bg); border-color:var(--none-line); }
+  .pill.part { color:var(--part); background:var(--part-bg); border-color:var(--part-line); }
+
+  .meta { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11.5px; color:var(--sub);
+    line-height:1.55; margin-bottom:11px; }
+  .meta b { color:var(--ink); font-weight:700; }
+
+  .blist { list-style:none; margin:0 0 11px; padding:0; flex:1; }
+  .blist li { display:flex; align-items:flex-start; gap:8px; font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12.5px; line-height:1.4; padding:6px 0; border-bottom:1px solid var(--line); }
+  .blist li:last-child { border-bottom:none; }
+  .blist .tick { flex:none; width:15px; height:15px; border-radius:50%; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff;
+    background:var(--ok); }
+  .blist li.missing .tick { background:#fff; border:1.5px solid var(--none-line); color:var(--none); }
+  .blist li.missing .bn { color:var(--sub); }
+  .blist .bn { flex:1; }
+  .blist .bn small { display:block; color:var(--sub); font-size:10.5px; margin-top:2px; }
+  .blist .cnt { flex:none; font-weight:700; color:var(--sub); font-size:11.5px; }
+  .none-note { font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; color:var(--none);
+    font-style:italic; padding:14px 0; flex:1; }
+
+  .card-foot { display:flex; justify-content:space-between; gap:8px; font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px; color:var(--sub); border-top:1px solid var(--line); padding-top:9px; }
+  .card-foot b { color:var(--ink); font-size:13px; }
+
+  /* per-card PNG button */
+  .card-bar { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .png-btn { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11px; font-weight:700;
+    cursor:pointer; padding:6px 11px; border-radius:3px; border:1.5px solid var(--line);
+    background:#fff; color:var(--sub); }
+  .png-btn:hover { border-color:var(--deep); color:var(--deep); }
+  .wa-btn { font-family:'Helvetica Neue',Arial,sans-serif; font-size:11px; font-weight:700;
+    cursor:pointer; padding:6px 11px 6px 8px; border-radius:3px; border:1.5px solid #25D36655;
+    background:#25D36618; color:#128C4C; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+  .wa-btn:hover { background:#25D36630; border-color:#25D366; }
+  .wa-btn svg { width:12px; height:12px; fill:#128C4C; }
+
+  #drop { margin-top:16px; border:1.5px dashed var(--line); border-radius:4px; padding:14px;
+    text-align:center; font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; color:var(--sub);
+    cursor:pointer; background:#fff; }
+  #drop.over { border-color:var(--deep); background:var(--tint); }
+
+  @media (max-width:600px) {
+    #cards { grid-template-columns:1fr; }
+    .controls { grid-template-columns:1fr; }
+  }
+  @media print {
+    header, .controls, #drop, .divider, #status, .card-bar { display:none; }
+    body { background:#fff; }
+    .card { box-shadow:none; break-inside:avoid; }
+    #cards { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div class="eyebrow">MANCOM · WECA YOUTH DEPARTMENT</div>
+    <h1>Area Submission Report Cards</h1>
+    <p>One card per Area, listing every location expected to report and whether it has submitted. Programmes, Areas and Branches all come from the workbook — nothing is hard-coded here.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="ctl">
+      <label for="prog">Programme</label>
+      <select id="prog"></select>
+    </div>
+    <div class="ctl">
+      <label for="scope">Reporting scope</label>
+      <select id="scope">
+        <option value="all">All submissions</option>
+        <option value="Area Headquaters">Central — Area HQ only</option>
+        <option value="Zone">Zonal</option>
+        <option value="Branch">Branch-based</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="show">Show areas</label>
+      <select id="show">
+        <option value="all">All areas</option>
+        <option value="yes">Submitted only</option>
+        <option value="no">Outstanding only</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="q">Search</label>
+      <input id="q" type="text" placeholder="Area, branch or correspondent…">
+    </div>
+    <div class="ctl">
+      <label for="me">Your name (for WhatsApp messages)</label>
+      <input id="me" type="text" placeholder="e.g. Bro. Nathaniel">
+    </div>
+    <div class="ctl">
+      <label>&nbsp;</label>
+      <div class="btnrow">
+        <button class="btn" id="refresh">Refresh live</button>
+        <button class="btn ghost" id="pngall">All PNGs</button>
+        <button class="btn ghost" id="print">Print / PDF</button>
+        <a class="btn ghost" href="dashboard.html">Dashboard →</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="totals"></div>
+
+  <div class="divider"><span>AREA REPORT CARDS</span><div class="rule"></div></div>
+  <div id="cards"></div>
+
+  <div id="drop">Drop the <b>MANCOM Submissions workbook (.xlsx)</b> here, or click to choose a file
+    <input id="file" type="file" accept=".xlsx" hidden>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================================================================
+     1. CONFIG — the ONLY thing in this file you ever edit.
+        Everything else (programmes, areas, leaders, reps, branches,
+        responses) lives in the workbook.
+     ================================================================ */
+  var CONFIG = {
+    API_URL: 'https://script.google.com/macros/s/AKfycbytS8yzg1hRdGi5YhXLe0DKGi7SJlfOFjE_tETmAN6wq6d2b29yqd4eb1FZomli1dIgew/exec',
+    REFRESH_MINUTES: 0
+  };
+
+  /* ================================================================
+     2. Helpers
+     ================================================================ */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  }
+  function norm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function yes(v) { var s = norm(v); return s === 'yes' || s === 'y' || s === 'true' || s === '1'; }
+
+  // ADDED — turns a locally-typed Nigerian number into wa.me's expected format.
+  // '0803...' -> '234803...', '+234803...' -> '234803...', leaves others as-is.
+  function waPhone(raw) {
+    var d = String(raw || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.charAt(0) === '0') d = '234' + d.slice(1);
+    return d;
+  }
+  // ADDED — builds the pre-filled outreach message for one leader/rep.
+  function waMessage(a, personName, sender, progLabel) {
+    var who = personName ? personName.split(',')[0].trim() : 'there';
+    var me = sender || 'MANCOM';
+    var lead = 'Hi ' + who + ', this is ' + me + ' reaching out from MANCOM (YDD).';
+    var status;
+    if (a.count === 0) {
+      status = 'So far, ' + a.area + ' has not submitted its ' + progLabel +
+        ' report yet — could you help push this along? ' + a.missing.length +
+        ' location(s) are still outstanding.';
+    } else if (a.state === 'ok') {
+      status = 'Great news — all ' + a.count + ' of ' + a.expected + ' locations in ' + a.area +
+        ' have submitted their ' + progLabel + ' report. Thank you for driving this!';
+    } else {
+      status = 'So far ' + a.count + ' of ' + a.expected + ' locations in ' + a.area +
+        ' have submitted their ' + progLabel + ' report — ' + a.missing.length +
+        ' still outstanding (' + a.missing.slice(0, 3).map(function (m) { return m.loc; }).join(', ') +
+        (a.missing.length > 3 ? ', …' : '') + '). Could you help us close the gap?';
+    }
+    return lead + ' ' + status + ' God bless you.';
+  }
+  function waLink(phone, msg) {
+    var p = waPhone(phone);
+    return p ? 'https://wa.me/' + p + '?text=' + encodeURIComponent(msg) : '';
+  }
+  function meName() {
+    var v = (document.getElementById('me').value || '').trim();
+    if (v) localStorage.setItem('mancomYourName', v);
+    return v || localStorage.getItem('mancomYourName') || '';
+  }
+
+  // Generic header-matching row reader. Takes a 2-D array (header row first)
+  // and a map of {field: [possible header names]}, returns array of objects.
+  function objects(rows, map, requiredField) {
+    if (!rows || rows.length < 2) return [];
+    var head = rows[0].map(function (h) { return norm(h).replace(/\n/g, ' '); });
+    var idx = {};
+    Object.keys(map).forEach(function (f) {
+      idx[f] = -1;
+      var keys = map[f];
+      for (var k = 0; k < keys.length && idx[f] < 0; k++) {
+        for (var i = 0; i < head.length; i++) {
+          if (head[i] === keys[k] || head[i].indexOf(keys[k]) === 0) { idx[f] = i; break; }
+        }
+      }
+    });
+    var out = [];
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r]; if (!row) continue;
+      var o = {};
+      Object.keys(map).forEach(function (f) { o[f] = idx[f] >= 0 ? row[idx[f]] : ''; });
+      if (requiredField && !String(o[requiredField] || '').trim()) continue;
+      out.push(o);
+    }
+    return out;
+  }
+
+  var MAP_PROG = { key:['key'], sheet:['sheet name','sheet'], label:['label','programme','program'],
+                   scope:['scope'], active:['active'] };
+  var MAP_AREA = { area:['area'], leader:['area leader','leader'], leaderPhone:['leader phone'],
+                   rep:['mancom rep','rep','representative'], repPhone:['rep phone'],
+                   expected:['expected'] };
+  var MAP_BRANCH = { area:['area'], branch:['branch / location','branch','location'],
+                     cat:['category'], alias:['alias'] };
+  var MAP_RESP = {
+    area:['area'], cat:['category of church location','category'],
+    loc:['branch location','branch','location'],
+    name:['name (firstname, lastname)','name','correspondent'],
+    phone:['phone number','phone'], held:['date held','date'],
+    m:['teenage male'], f:['teenage female'], p:['parents'], tot:['total'],
+    sal:['salvation'], san:['sanctification'], hg:['baptism of the holy ghost','holy ghost'],
+    heal:['healing'], re:['re-anointing','reanointing'], oth:['other blessings','others']
+  };
+
+  /* ================================================================
+     3. State — all of it loaded from the workbook
+     ================================================================ */
+  var PROGRAMMES = [], AREAS = [], BRANCHES = [], RECORDS = [], SOURCE = '';
+  var WB = null;   // an uploaded workbook, so programme switching can re-read it
+
+  /* ================================================================
+     4. Build the per-area model
+     ================================================================ */
+  function build(scope, query) {
+    // roster of expected locations, per area
+    var expected = {};
+    BRANCHES.forEach(function (b) {
+      if (!String(b.area || '').trim() || !String(b.branch || '').trim()) return;
+      if (scope !== 'all' && norm(b.cat) !== norm(scope)) return;
+      var k = norm(b.area);
+      (expected[k] = expected[k] || []).push({
+        key: norm(b.branch), alias: norm(b.alias), branch: String(b.branch).trim(),
+        cat: String(b.cat || '').trim()
+      });
+    });
+
+    var byArea = {};
+    AREAS.forEach(function (m) {
+      if (!String(m.area || '').trim()) return;
+      byArea[norm(m.area)] = { meta: m, area: String(m.area).trim(), got: [], missing: [], extra: false };
+    });
+
+    // match each response to an expected location
+    RECORDS.forEach(function (r) {
+      if (scope !== 'all' && norm(r.cat) !== norm(scope)) return;
+      var k = norm(r.area);
+      if (!byArea[k]) {
+        byArea[k] = { meta: { area: String(r.area).trim(), leader:'', rep:'', expected:'' },
+                      area: String(r.area).trim(), got: [], missing: [], extra: true };
+      }
+      var bucket = byArea[k];
+      var raw = norm(r.loc) || norm(r.name);
+      var match = null, list = expected[k] || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].key === raw || (list[i].alias && list[i].alias === raw)) { match = list[i]; break; }
+      }
+      var label = match ? match.branch : (String(r.loc).trim() || String(r.name).trim() || '(not stated)');
+      var lkey = match ? match.key : raw || 'unnamed';
+      var seen = null;
+      for (var j = 0; j < bucket.got.length; j++) if (bucket.got[j].key === lkey) { seen = bucket.got[j]; break; }
+      if (seen) { seen.dupes++; return; }
+      bucket.got.push({
+        key: lkey, loc: label, cat: String(r.cat || '').trim(), name: String(r.name || '').trim(),
+        held: String(r.held || '').trim(), tot: num(r.tot) || (num(r.m) + num(r.f) + num(r.p)),
+        blessings: num(r.sal) + num(r.san) + num(r.hg) + num(r.heal) + num(r.re) + num(r.oth),
+        dupes: 0, known: !!match
+      });
+    });
+
+    // anything on the roster that never came in
+    Object.keys(byArea).forEach(function (k) {
+      var bucket = byArea[k], list = expected[k] || [];
+      list.forEach(function (e) {
+        for (var i = 0; i < bucket.got.length; i++) if (bucket.got[i].key === e.key) return;
+        bucket.missing.push({ loc: e.branch, cat: e.cat });
+      });
+    });
+
+    var out = Object.keys(byArea).map(function (k) { return byArea[k]; });
+    out.forEach(function (a) {
+      a.got.sort(function (x, y) { return x.loc.localeCompare(y.loc); });
+      a.missing.sort(function (x, y) { return x.loc.localeCompare(y.loc); });
+      a.count = a.got.length;
+      a.expected = num(a.meta.expected) || (a.got.length + a.missing.length);
+      a.people = a.got.reduce(function (s, l) { return s + l.tot; }, 0);
+      a.blessings = a.got.reduce(function (s, l) { return s + l.blessings; }, 0);
+      a.state = a.count === 0 ? 'nil' : (a.expected && a.count < a.expected ? 'part' : 'ok');
+      a.search = norm(a.area + ' ' + a.meta.rep + ' ' + a.meta.leader + ' ' +
+        a.got.map(function (l) { return l.loc + ' ' + l.name; }).join(' ') + ' ' +
+        a.missing.map(function (l) { return l.loc; }).join(' '));
+    });
+
+    out.sort(function (x, y) {
+      var order = { nil: 0, part: 1, ok: 2 };
+      if (x.state !== y.state) return order[x.state] - order[y.state];
+      return x.area.localeCompare(y.area);
+    });
+    if (query) out = out.filter(function (a) { return a.search.indexOf(norm(query)) >= 0; });
+    return out;
+  }
+
+  /* ================================================================
+     5. Render
+     ================================================================ */
+  var cardsEl = document.getElementById('cards');
+  var totalsEl = document.getElementById('totals');
+  var statusEl = document.getElementById('status');
+  function setStatus(t, cls) { statusEl.textContent = t; statusEl.className = cls || ''; }
+
+  function cardHtml(a, forPng) {
+    var m = a.meta;
+    var pill = a.state === 'nil' ? '<span class="pill nil">No submission</span>'
+      : '<span class="pill ' + (a.state === 'part' ? 'part' : 'ok') + '">' +
+        a.count + ' of ' + a.expected + ' submitted</span>';
+
+    var items = a.got.map(function (l) {
+      return '<li><span class="tick">\u2713</span><span class="bn">' + esc(l.loc) +
+        '<small>' + esc(l.cat || '\u2014') + (l.name ? ' \u00b7 ' + esc(l.name) : '') +
+        (l.held ? ' \u00b7 ' + esc(l.held) : '') +
+        (l.dupes ? ' \u00b7 ' + (l.dupes + 1) + ' entries received' : '') +
+        (l.known ? '' : ' \u00b7 not on the branch list') +
+        '</small></span><span class="cnt">' + (l.tot || '\u2014') + '</span></li>';
+    }).concat(a.missing.map(function (l) {
+      return '<li class="missing"><span class="tick">\u2013</span><span class="bn">' + esc(l.loc) +
+        '<small>' + esc(l.cat || '\u2014') + ' \u00b7 awaiting submission</small></span>' +
+        '<span class="cnt">\u2014</span></li>';
+    })).join('');
+
+    var body = (a.got.length + a.missing.length) === 0
+      ? '<div class="none-note">No locations listed for this Area at this scope.</div>'
+      : '<ul class="blist">' + items + '</ul>';
+
+    return '<div class="card ' + a.state + '" data-area="' + esc(a.area) + '">' +
+      '<div class="card-head"><h3>' + esc(a.area) + '</h3>' + pill + '</div>' +
+      '<div class="meta">' +
+        'Area Leader: <b>' + esc(m.leader || '\u2014') + '</b><br>' +
+        'MANCOM Rep: <b>' + esc(m.rep || '\u2014') + '</b>' +
+        (a.extra ? '<br>Not on the Areas sheet' : '') +
+      '</div>' + body +
+      '<div class="card-foot">' +
+        '<span>Attendance <b>' + a.people + '</b></span>' +
+        '<span>Blessings <b>' + a.blessings + '</b></span>' +
+        '<span>Submitted <b>' + a.count + '</b></span>' +
+      '</div>' +
+      (forPng ? '' : waBar(a)) +
+      '</div>';
+  }
+
+  // ADDED — WhatsApp icon + one button per contact that has a phone number on file.
+  var WA_ICON = '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.5 15.2L2 22l4.9-1.5A10 10 0 1012 2zm0 18.2a8.1 8.1 0 01-4.2-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.4 7.4 0 01-1.4-1.7c-.1-.2 0-.4.1-.5l.4-.4a1 1 0 00.2-.4.4.4 0 000-.4c-.1-.1-.5-1.2-.7-1.7s-.4-.4-.5-.4h-.5a.9.9 0 00-.6.3 2.7 2.7 0 00-.9 2 4.6 4.6 0 001 2.5 10.6 10.6 0 004.1 3.6c.6.2 1 .4 1.4.5a3.3 3.3 0 001.5.1 2.5 2.5 0 001.6-1.1 2 2 0 00.1-1.1c0-.1-.2-.2-.4-.3z"/></svg>';
+  function waBar(a) {
+    var m = a.meta;
+    var sender = meName();
+    var prog = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    var label = (prog && prog.label) || 'programme';
+    var btns = '';
+    if (waPhone(m.leaderPhone)) {
+      btns += '<a class="wa-btn" target="_blank" rel="noopener" href="' + esc(waLink(m.leaderPhone, waMessage(a, m.leader, sender, label))) + '">' + WA_ICON + 'Leader</a>';
+    }
+    if (waPhone(m.repPhone)) {
+      btns += '<a class="wa-btn" target="_blank" rel="noopener" href="' + esc(waLink(m.repPhone, waMessage(a, m.rep, sender, label))) + '">' + WA_ICON + 'Rep</a>';
+    }
+    if (!btns) return '<div class="card-bar"><button class="png-btn" data-png="' + esc(a.area) + '">Download PNG</button></div>';
+    return '<div class="card-bar">' + btns + '<button class="png-btn" data-png="' + esc(a.area) + '">Download PNG</button></div>';
+  }
+
+  function totals(list) {
+    var subm = list.filter(function (a) { return a.count > 0; }).length;
+    var locs = list.reduce(function (s, a) { return s + a.count; }, 0);
+    var ppl = list.reduce(function (s, a) { return s + a.people; }, 0);
+    var bl = list.reduce(function (s, a) { return s + a.blessings; }, 0);
+    function t(n, l) { return '<div class="tot"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>'; }
+    return t(subm + ' / ' + list.length, 'AREAS REPORTING') + t(locs, 'LOCATIONS SUBMITTED') +
+      t(ppl.toLocaleString(), 'TOTAL ATTENDANCE') + t(bl, 'BLESSINGS RECORDED');
+  }
+
+  var VIEW = [];
+  function paint() {
+    var scope = document.getElementById('scope').value;
+    var show = document.getElementById('show').value;
+    var q = document.getElementById('q').value.trim();
+    VIEW = build(scope, q);
+    totalsEl.innerHTML = totals(VIEW);
+    var shown = VIEW.filter(function (a) {
+      return show === 'all' || (show === 'yes' ? a.count > 0 : a.count === 0);
+    });
+    cardsEl.innerHTML = shown.length ? shown.map(function (a) { return cardHtml(a, false); }).join('')
+      : '<p style="grid-column:1/-1;text-align:center;color:var(--sub);padding:40px 0;">Nothing matches that filter.</p>';
+  }
+
+  /* ================================================================
+     6. PNG export — the card is HTML, so it is drawn into an SVG
+        <foreignObject> and rasterised on a canvas. No libraries, no
+        network calls, so the canvas never gets tainted.
+     ================================================================ */
+  function cssText() {
+    var out = '';
+    for (var i = 0; i < document.styleSheets.length; i++) {
+      var rules;
+      try { rules = document.styleSheets[i].cssRules; } catch (e) { continue; }
+      for (var j = 0; j < rules.length; j++) {
+        var t = rules[j].cssText;
+        if (t.indexOf('@media print') === 0) continue;
+        out += t + '\n';
+      }
+    }
+    return out;
+  }
+  function download(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function cardToPng(area, cb) {
+    var model = null;
+    for (var i = 0; i < VIEW.length; i++) if (VIEW[i].area === area) { model = VIEW[i]; break; }
+    if (!model) { cb(); return; }
+
+    var W = 520, SCALE = 2;
+    // Lay the card out off-screen at a fixed width so the PNG is consistent
+    var stage = document.createElement('div');
+    stage.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + W + 'px;background:#F6F5F1;padding:18px;';
+    stage.innerHTML = cardHtml(model, true);
+    document.body.appendChild(stage);
+    var H = Math.ceil(stage.getBoundingClientRect().height);
+
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '">' +
+      '<foreignObject width="100%" height="100%">' +
+      '<div xmlns="http://www.w3.org/1999/xhtml">' +
+      '<style>' + cssText() + '</style>' + stage.innerHTML +
+      '</div></foreignObject></svg>';
+    document.body.removeChild(stage);
+
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = W * SCALE; c.height = H * SCALE;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#F6F5F1'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.scale(SCALE, SCALE);
+      ctx.drawImage(img, 0, 0);
+      c.toBlob(function (blob) {
+        var prog = PROGRAMMES[document.getElementById('prog').selectedIndex];
+        download(blob, area.toUpperCase() + ' \u2014 ' + ((prog && prog.label) || 'REPORT') + '.png');
+        cb();
+      }, 'image/png');
+    };
+    img.onerror = function () { setStatus('\u26a0 Could not render the PNG in this browser', 'err'); cb(); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  cardsEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-png]');
+    if (!btn) return;
+    var label = btn.textContent;
+    btn.textContent = 'Rendering\u2026'; btn.disabled = true;
+    cardToPng(btn.getAttribute('data-png'), function () {
+      btn.textContent = label; btn.disabled = false;
+    });
+  });
+  document.getElementById('pngall').onclick = function () {
+    var show = document.getElementById('show').value;
+    var list = VIEW.filter(function (a) {
+      return show === 'all' || (show === 'yes' ? a.count > 0 : a.count === 0);
+    });
+    var i = 0;
+    (function next() {
+      if (i >= list.length) { setStatus(list.length + ' PNGs downloaded.'); return; }
+      var a = list[i++];
+      setStatus('Rendering PNG ' + i + ' of ' + list.length + ' \u2014 ' + a.area + '\u2026');
+      cardToPng(a.area, function () { setTimeout(next, 400); });
+    })();
+  };
+
+  /* ================================================================
+     7. Loading — live sheet first, uploaded workbook second
+     ================================================================ */
+  function jsonp(url, cb, errCb) {
+    var name = 'mancomSubCB' + Date.now();
+    var s = document.createElement('script');
+    var timer = setTimeout(function () { cleanup(); errCb(new Error('Live request timed out')); }, 20000);
+    function cleanup() { clearTimeout(timer); try { delete window[name]; } catch (e) { window[name] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+    window[name] = function (data) { cleanup(); cb(data); };
+    s.onerror = function () { cleanup(); errCb(new Error('Could not reach the Google Sheet service')); };
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&t=' + Date.now();
+    document.body.appendChild(s);
+  }
+  function fetchLive(cb, errCb) {
+    var url = CONFIG.API_URL;
+    if (!url || url.indexOf('PASTE_') === 0) { errCb(new Error('No API_URL configured')); return; }
+    if (typeof fetch === 'function') {
+      fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now())
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(cb).catch(function () { jsonp(url, cb, errCb); });
+    } else { jsonp(url, cb, errCb); }
+  }
+
+  function fillProgrammes(keepIndex) {
+    var sel = document.getElementById('prog');
+    var want = keepIndex != null ? keepIndex : sel.selectedIndex;
+    sel.innerHTML = '';
+    PROGRAMMES.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.key; o.textContent = p.label || p.key;
+      sel.appendChild(o);
+    });
+    sel.selectedIndex = (want >= 0 && want < PROGRAMMES.length) ? want : 0;
+    applyScopeDefault();
+  }
+  function applyScopeDefault() {
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    if (!p) return;
+    var s = norm(p.scope);
+    document.getElementById('scope').value =
+      s === 'central' ? 'Area Headquaters' : (s === 'zonal' ? 'Zone' : 'all');
+  }
+
+  function finish(tag) {
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    setStatus(((p && p.label) || 'Programme') + ' \u00b7 ' + RECORDS.length + ' responses \u00b7 ' +
+      AREAS.length + ' areas \u00b7 ' + BRANCHES.length + ' locations on file \u00b7 from the ' + tag +
+      ' \u00b7 ' + new Date().toLocaleString());
+    paint();
+  }
+
+  function loadLive(silent) {
+    if (!silent) setStatus('Fetching the live Google Sheet\u2026');
+    fetchLive(function (res) {
+      try {
+        if (!res || res.ok === false) throw new Error(res && res.error ? res.error : 'Bad response');
+        PROGRAMMES = objects(res.programmes, MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
+        AREAS = objects(res.areas, MAP_AREA, 'area');
+        BRANCHES = objects(res.branches, MAP_BRANCH, 'area');
+        if (!PROGRAMMES.length) throw new Error('No active programme found on the Programmes sheet');
+        fillProgrammes(null);
+        var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+        var raw = res[p.key];
+        if (!raw || !raw.length) throw new Error('The live feed has no "' + p.key + '" responses yet');
+        RECORDS = objects(raw, MAP_RESP, 'area');
+        SOURCE = 'live'; finish('live sheet');
+      } catch (e) { setStatus('\u26a0 ' + e.message + ' \u2014 drop the workbook below to work offline', 'err'); }
+    }, function (err) {
+      setStatus('\u26a0 Live sheet unavailable (' + err.message + ') \u2014 drop the workbook below to work offline', 'err');
+    });
+  }
+
+  /* ================================================================
+     8. Offline .xlsx reader — same one index.html uses
+     ================================================================ */
+  /* -------- offline .xlsx fallback (unchanged reader) -------- */
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+  async function inflateRaw(bytes) {
+    var ds = new DecompressionStream('deflate-raw');
+    var stream = new Blob([bytes]).stream().pipeThrough(ds);
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function unzip(arrayBuffer) {
+    var b = new Uint8Array(arrayBuffer), eocd = -1;
+    for (var i = b.length - 22; i >= Math.max(0, b.length - 66000); i--) {
+      if (u32(b, i) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Not a valid .xlsx (zip) file');
+    var count = u16(b, eocd + 10), cdOff = u32(b, eocd + 16), files = {}, p = cdOff;
+    for (var n = 0; n < count; n++) {
+      if (u32(b, p) !== 0x02014b50) break;
+      var method = u16(b, p + 10), csize = u32(b, p + 20);
+      var nlen = u16(b, p + 28), elen = u16(b, p + 30), clen = u16(b, p + 32), lho = u32(b, p + 42);
+      files[new TextDecoder().decode(b.subarray(p + 46, p + 46 + nlen))] = { method: method, csize: csize, lho: lho };
+      p += 46 + nlen + elen + clen;
+    }
+    async function read(name) {
+      var f = files[name]; if (!f) return null;
+      var q = f.lho, nl = u16(b, q + 26), el = u16(b, q + 28);
+      var data = b.subarray(q + 30 + nl + el, q + 30 + nl + el + f.csize);
+      return new TextDecoder().decode(f.method === 0 ? data : await inflateRaw(data));
+    }
+    return { read: read, names: Object.keys(files) };
+  }
+  function colIndex(ref) {
+    var m = /^([A-Z]+)/.exec(ref); if (!m) return 0;
+    var c = 0; for (var i = 0; i < m[1].length; i++) c = c * 26 + (m[1].charCodeAt(i) - 64);
+    return c - 1;
+  }
+  async function readXlsx(arrayBuffer) {
+    var z = await unzip(arrayBuffer), parser = new DOMParser();
+    var wbXml = parser.parseFromString(await z.read('xl/workbook.xml'), 'application/xml');
+    var relsXml = parser.parseFromString(await z.read('xl/_rels/workbook.xml.rels'), 'application/xml');
+    var rels = {};
+    Array.prototype.forEach.call(relsXml.getElementsByTagName('*'), function (r) {
+      if (r.localName === 'Relationship') rels[r.getAttribute('Id')] = r.getAttribute('Target');
+    });
+    var sheets = {};
+    Array.prototype.forEach.call(wbXml.getElementsByTagName('*'), function (s) {
+      if (s.localName !== 'sheet') return;
+      var rid = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+      var target = rels[rid]; if (!target) return;
+      if (target.indexOf('/') === 0) target = target.slice(1); else if (target.indexOf('xl/') !== 0) target = 'xl/' + target;
+      sheets[s.getAttribute('name')] = target;
+    });
+    var sstRaw = await z.read('xl/sharedStrings.xml'), sst = [];
+    if (sstRaw) {
+      var sstXml = parser.parseFromString(sstRaw, 'application/xml');
+      Array.prototype.forEach.call(sstXml.getElementsByTagName('*'), function (si) {
+        if (si.localName !== 'si') return;
+        var txt = '';
+        Array.prototype.forEach.call(si.getElementsByTagName('*'), function (t) {
+          if (t.localName === 't') txt += t.textContent;
+        });
+        sst.push(txt);
+      });
+    }
+    async function rows(sheetName) {
+      var path = sheets[sheetName]; if (!path) return null;
+      var xml = parser.parseFromString(await z.read(path), 'application/xml'), out = [];
+      Array.prototype.forEach.call(xml.getElementsByTagName('*'), function (row) {
+        if (row.localName !== 'row') return;
+        var arr = [];
+        Array.prototype.forEach.call(row.childNodes, function (c) {
+          if (c.localName !== 'c') return;
+          var ci = colIndex(c.getAttribute('r') || ''), t = c.getAttribute('t'), v = null;
+          if (t === 'inlineStr') v = c.textContent;
+          else {
+            for (var k = 0; k < c.childNodes.length; k++) {
+              if (c.childNodes[k].localName === 'v') { v = c.childNodes[k].textContent; break; }
+            }
+            if (v != null) {
+              if (t === 's') v = sst[parseInt(v, 10)];
+              else if (t !== 'str' && t !== 'b') { var num = parseFloat(v); if (!isNaN(num)) v = num; }
+            }
+          }
+          arr[ci] = v;
+        });
+        out.push(arr);
+      });
+      return out;
+    }
+    return { rows: rows, sheetNames: Object.keys(sheets) };
+  }
+
+
+  function findSheet(names, wanted) {
+    for (var i = 0; i < names.length; i++) if (norm(names[i]) === norm(wanted)) return names[i];
+    for (var j = 0; j < names.length; j++) if (norm(names[j]).indexOf(norm(wanted)) === 0) return names[j];
+    return null;
+  }
+  async function loadFromWorkbook(wb, keepIndex) {
+    var n = wb.sheetNames;
+    var ps = findSheet(n, 'Programmes'), as = findSheet(n, 'Areas'), bs = findSheet(n, 'Branches');
+    if (!ps || !as || !bs)
+      throw new Error('Workbook needs Programmes, Areas and Branches sheets. Found: ' + n.join(', '));
+    PROGRAMMES = objects(await wb.rows(ps), MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
+    AREAS = objects(await wb.rows(as), MAP_AREA, 'area');
+    BRANCHES = objects(await wb.rows(bs), MAP_BRANCH, 'area');
+    if (!PROGRAMMES.length) throw new Error('No programme on the Programmes sheet has Active set to YES');
+    fillProgrammes(keepIndex);
+    var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
+    var rs = findSheet(n, p.sheet) || findSheet(n, 'Form responses 1');
+    if (!rs) throw new Error('No sheet named "' + p.sheet + '" in this workbook');
+    RECORDS = objects(await wb.rows(rs), MAP_RESP, 'area');
+    SOURCE = 'file'; finish('uploaded workbook');
+  }
+  async function handleFile(file) {
+    setStatus('Reading ' + file.name + '\u2026');
+    try {
+      if (typeof DecompressionStream === 'undefined')
+        throw new Error('This browser cannot unpack .xlsx \u2014 use Chrome, Edge, or Safari 16.4+');
+      WB = await readXlsx(await file.arrayBuffer());
+      await loadFromWorkbook(WB, null);
+    } catch (e) { setStatus('\u26a0 ' + e.message, 'err'); }
+  }
+
+  /* ================================================================
+     9. Wiring
+     ================================================================ */
+  document.getElementById('prog').onchange = function () {
+    applyScopeDefault();
+    if (SOURCE === 'file' && WB) { loadFromWorkbook(WB, this.selectedIndex).catch(function (e) { setStatus('\u26a0 ' + e.message, 'err'); }); }
+    else { loadLive(false); }
+  };
+  document.getElementById('scope').onchange = paint;
+  document.getElementById('show').onchange = paint;
+  document.getElementById('q').oninput = paint;
+  document.getElementById('me').value = localStorage.getItem('mancomYourName') || ''; // ADDED
+  document.getElementById('me').oninput = paint; // ADDED — regenerates WhatsApp links with the new sender name
+  document.getElementById('refresh').onclick = function () { loadLive(false); };
+  document.getElementById('print').onclick = function () { window.print(); };
+
+  var drop = document.getElementById('drop'), input = document.getElementById('file');
+  drop.onclick = function () { input.click(); };
+  input.onchange = function () { if (input.files[0]) handleFile(input.files[0]); };
+  drop.ondragover = function (e) { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = function () { drop.classList.remove('over'); };
+  drop.ondrop = function (e) {
+    e.preventDefault(); drop.classList.remove('over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  };
+
+  /* -------- boot -------- */
+  loadLive(false);
+  if (CONFIG.REFRESH_MINUTES > 0) setInterval(function () { loadLive(true); }, CONFIG.REFRESH_MINUTES * 60000);
+})();
+</script>
+</body>
+</html>
