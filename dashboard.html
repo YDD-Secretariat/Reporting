@@ -120,7 +120,7 @@
       <h1>Submissions Dashboard</h1>
       <p>A single view across every Area — who has reported, who hasn't, and how the programme is trending. Reads the same workbook as the report cards.</p>
     </div>
-    <a class="backlink" href="submissions.html">← Area Report Cards</a>
+    <a class="backlink" href="index.html">← Area Report Cards</a>
   </div>
 </header>
 
@@ -242,7 +242,7 @@
   var WB = null;
   var MODEL = [], SORT = { k:'state', dir:1 };
 
-  /* -------- same per-area model as submissions.html -------- */
+  /* -------- same per-area model as index.html -------- */
   function build(scope, query) {
     var expected = {};
     BRANCHES.forEach(function (b) {
@@ -372,7 +372,7 @@
     };
   });
 
-  /* -------- loading (identical pattern to submissions.html) -------- */
+  /* -------- loading (identical pattern to index.html) -------- */
   function jsonp(url, cb, errCb) {
     var name = 'mancomDashCB' + Date.now();
     var s = document.createElement('script');
