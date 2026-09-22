@@ -182,6 +182,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -467,23 +468,16 @@
   }
 
   /* ================================================================
-     6. PNG export — the card is HTML, so it is drawn into an SVG
-        <foreignObject> and rasterised on a canvas. No libraries, no
-        network calls, so the canvas never gets tainted.
+     6. PNG export.
+        Earlier version drew the card into an SVG <foreignObject> and
+        rasterised that via <img> + canvas. Firefox and Safari refuse to
+        paint foreignObject content when the SVG is loaded as an <img>
+        (Chrome is the only browser that reliably allows it), so that
+        approach failed everywhere except Chrome/Edge with "Could not
+        render the PNG in this browser". html2canvas walks the live DOM
+        and paints it directly, which works the same way in every
+        modern browser — this replaces the old technique below.
      ================================================================ */
-  function cssText() {
-    var out = '';
-    for (var i = 0; i < document.styleSheets.length; i++) {
-      var rules;
-      try { rules = document.styleSheets[i].cssRules; } catch (e) { continue; }
-      for (var j = 0; j < rules.length; j++) {
-        var t = rules[j].cssText;
-        if (t.indexOf('@media print') === 0) continue;
-        out += t + '\n';
-      }
-    }
-    return out;
-  }
   function download(blob, name) {
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
@@ -494,38 +488,30 @@
     var model = null;
     for (var i = 0; i < VIEW.length; i++) if (VIEW[i].area === area) { model = VIEW[i]; break; }
     if (!model) { cb(); return; }
+    if (typeof html2canvas !== 'function') {
+      setStatus('\u26a0 PNG export needs an internet connection the first time (to load html2canvas) \u2014 check your connection and try again', 'err');
+      cb(); return;
+    }
 
-    var W = 520, SCALE = 2;
+    var W = 520;
     // Lay the card out off-screen at a fixed width so the PNG is consistent
     var stage = document.createElement('div');
     stage.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + W + 'px;background:#F6F5F1;padding:18px;';
     stage.innerHTML = cardHtml(model, true);
     document.body.appendChild(stage);
-    var H = Math.ceil(stage.getBoundingClientRect().height);
 
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '">' +
-      '<foreignObject width="100%" height="100%">' +
-      '<div xmlns="http://www.w3.org/1999/xhtml">' +
-      '<style>' + cssText() + '</style>' + stage.innerHTML +
-      '</div></foreignObject></svg>';
-    document.body.removeChild(stage);
-
-    var img = new Image();
-    img.onload = function () {
-      var c = document.createElement('canvas');
-      c.width = W * SCALE; c.height = H * SCALE;
-      var ctx = c.getContext('2d');
-      ctx.fillStyle = '#F6F5F1'; ctx.fillRect(0, 0, c.width, c.height);
-      ctx.scale(SCALE, SCALE);
-      ctx.drawImage(img, 0, 0);
-      c.toBlob(function (blob) {
+    html2canvas(stage, { backgroundColor: '#F6F5F1', scale: 2 }).then(function (canvas) {
+      document.body.removeChild(stage);
+      canvas.toBlob(function (blob) {
         var prog = PROGRAMMES[document.getElementById('prog').selectedIndex];
         download(blob, area.toUpperCase() + ' \u2014 ' + ((prog && prog.label) || 'REPORT') + '.png');
         cb();
       }, 'image/png');
-    };
-    img.onerror = function () { setStatus('\u26a0 Could not render the PNG in this browser', 'err'); cb(); };
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }).catch(function (e) {
+      if (stage.parentNode) document.body.removeChild(stage);
+      setStatus('\u26a0 Could not render the PNG: ' + (e && e.message ? e.message : e), 'err');
+      cb();
+    });
   }
 
   cardsEl.addEventListener('click', function (e) {
