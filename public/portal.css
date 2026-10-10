@@ -15,3 +15,8 @@ button:hover,.btn:hover{filter:brightness(1.09)}:focus-visible{outline:3px solid
 @media(max-width:650px){.sessionbar{flex-direction:column;align-items:flex-start}.sessionbar>div{width:100%;justify-content:space-between}header{padding-top:27px}.controls{padding:16px;grid-template-columns:1fr}.wrap{padding-inline:12px}#identity{max-width:75%}}
 @media print{.sessionbar,#response-detail,#auth-error{display:none!important}header{padding:18px;background:#fff;color:#103f36}.stat,.tot,.card,.panel{box-shadow:none}header p{color:#444}}
 .controls .ctl:has(.btnrow){grid-column:1/-1}.controls .ctl:has(.btnrow)>label{display:none}.btnrow{display:flex;gap:8px}.btnrow a{text-decoration:none;display:inline-flex;align-items:center}#cards:has(.card:only-child){grid-template-columns:minmax(0,800px)}
+
+.mode-pill{display:inline-flex;background:#0d332c;border-radius:999px;padding:3px;gap:2px}
+.mode-pill button{border:0;background:transparent;color:#bfe0d5;font-family:Arial;font-size:12px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer}
+.mode-pill button.active{background:#fff;color:var(--deep,#12433A)}
+body.auth-pending > *:not(.auth-error){visibility:hidden}

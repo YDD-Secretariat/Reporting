@@ -3,12 +3,25 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "public",
-  "functions": {"api/reporting.js": {"maxDuration": 60}},
-  "headers": [{"source": "/(.*)", "headers": [
-    {"key":"X-Content-Type-Options","value":"nosniff"},
-    {"key":"X-Frame-Options","value":"DENY"},
-    {"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},
-    {"key":"Cross-Origin-Opener-Policy","value":"same-origin-allow-popups"},
-    {"key":"Cache-Control","value":"no-store"}
-  ]}]
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/reporting" }
+  ],
+  "functions": {
+    "api/reporting.js": {
+      "maxDuration": 60,
+      "memory": 256
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
 }
