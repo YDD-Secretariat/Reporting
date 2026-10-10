@@ -110,15 +110,18 @@
     #panels { grid-template-columns:1fr 1fr; }
   }
 </style>
+<link rel="stylesheet" href="/portal.css">
+<script src="/portal.js"></script>
 </head>
-<body>
+<body class="auth-pending">
+<div class="sessionbar"><a href="/">M <span>MANCOM · Reporting hub</span></a><div><span id="identity"></span><button id="signout" type="button">Sign out</button></div></div>
 
 <header>
   <div class="inner">
     <div>
       <div class="eyebrow">MANCOM · WECA YOUTH DEPARTMENT</div>
       <h1>Submissions Dashboard</h1>
-      <p>A single view across every Area — who has reported, who hasn't, and how the programme is trending. Reads the same workbook as the report cards.</p>
+      <p>A single view across your authorised areas — who has reported, who hasn't, and how the programme is trending. Reads the same workbook as the report cards.</p>
     </div>
     <a class="backlink" href="index.html">← Area Report Cards</a>
   </div>
@@ -127,7 +130,7 @@
 <div class="wrap">
   <div class="controls">
     <div class="ctl">
-      <label for="prog">Programme</label>
+      <label for="prog">Report / programme</label>
       <select id="prog"></select>
     </div>
     <div class="ctl">
@@ -152,7 +155,7 @@
     </div>
   </div>
 
-  <div id="status"></div>
+  <div id="status" role="status" aria-live="polite"></div>
 
   <div id="stats"></div>
 
@@ -165,14 +168,14 @@
   <div id="panels"></div>
 
   <div class="divider"><span>EVERY AREA</span><div class="rule"></div></div>
-  <table>
+  <div class="detail-scroll"><table>
     <thead><tr>
       <th data-k="area">Area</th><th data-k="rep">MANCOM Rep</th>
       <th data-k="count">Submitted</th><th data-k="people">Attendance</th>
       <th data-k="blessings">Blessings</th><th data-k="state">Status</th>
     </tr></thead>
     <tbody id="tbody"></tbody>
-  </table>
+  </table></div>
 
   <div id="drop">Drop the <b>MANCOM Submissions workbook (.xlsx)</b> here, or click to choose a file
     <input id="file" type="file" accept=".xlsx" hidden>
@@ -183,18 +186,15 @@
 (function () {
   'use strict';
 
-  var CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbwXqvm1pec14i1vrYNDm36BnmUYY7ku344VgCqppMU-XssFKsKPL_jKeA6UMP0ctskE9g/exec',
-    REFRESH_MINUTES: 0
-  };
+  var CONFIG = { API_URL: '/api/reporting', REFRESH_MINUTES: 0 };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
     });
   }
-  function norm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
-  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function norm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ').replace('headquaters', 'headquarters'); }
+  function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isNaN(n) ? 0 : n; }
   function yes(v) { var s = norm(v); return s === 'yes' || s === 'y' || s === 'true' || s === '1'; }
 
   function objects(rows, map, requiredField) {
@@ -205,8 +205,10 @@
       idx[f] = -1;
       var keys = map[f];
       for (var k = 0; k < keys.length && idx[f] < 0; k++) {
+        var exact = head.indexOf(keys[k]);
+        if (exact >= 0) { idx[f] = exact; break; }
         for (var i = 0; i < head.length; i++) {
-          if (head[i] === keys[k] || head[i].indexOf(keys[k]) === 0) { idx[f] = i; break; }
+          if (head[i].indexOf(keys[k]) === 0) { idx[f] = i; break; }
         }
       }
     });
@@ -222,7 +224,7 @@
   }
 
   var MAP_PROG = { key:['key'], sheet:['sheet name','sheet'], label:['label','programme','program'],
-                   scope:['scope'], active:['active'] };
+                   scope:['scope'], active:['active'], mapping:['column map'] };
   var MAP_AREA = { area:['area'], leader:['area leader','leader'], leaderPhone:['leader phone'],
                    rep:['mancom rep','rep','representative'], repPhone:['rep phone'],
                    expected:['expected'] };
@@ -244,14 +246,14 @@
 
   /* -------- same per-area model as index.html -------- */
   function build(scope, query) {
-    var expected = {};
+    var expected = Object.create(null);
     BRANCHES.forEach(function (b) {
       if (!String(b.area || '').trim() || !String(b.branch || '').trim()) return;
       if (scope !== 'all' && norm(b.cat) !== norm(scope)) return;
       var k = norm(b.area);
       (expected[k] = expected[k] || []).push({ key: norm(b.branch), alias: norm(b.alias) });
     });
-    var byArea = {};
+    var byArea = Object.create(null);
     AREAS.forEach(function (m) {
       if (!String(m.area || '').trim()) return;
       byArea[norm(m.area)] = { meta: m, area: String(m.area).trim(), got: [], missing: 0, extra: false };
@@ -274,7 +276,7 @@
     var out = Object.keys(byArea).map(function (k) { return byArea[k]; });
     out.forEach(function (a) {
       a.count = a.got.length;
-      a.expected = num(a.meta.expected) || (expected[norm(a.area)] || []).length || a.count;
+      a.expected = (scope === 'all' ? num(a.meta.expected) : 0) || (expected[norm(a.area)] || []).length || a.count;
       a.people = 0; a.blessings = 0;
       a.got.forEach(function (key) { var d = a['_' + key]; if (d) { a.people += d.tot; a.blessings += d.bl; } });
       a.state = a.count === 0 ? 'nil' : (a.expected && a.count < a.expected ? 'part' : 'ok');
@@ -373,27 +375,19 @@
   });
 
   /* -------- loading (identical pattern to index.html) -------- */
-  function jsonp(url, cb, errCb) {
-    var name = 'mancomDashCB' + Date.now();
-    var s = document.createElement('script');
-    var timer = setTimeout(function () { cleanup(); errCb(new Error('Live request timed out')); }, 20000);
-    function cleanup() { clearTimeout(timer); try { delete window[name]; } catch (e) { window[name] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
-    window[name] = function (data) { cleanup(); cb(data); };
-    s.onerror = function () { cleanup(); errCb(new Error('Could not reach the Google Sheet service')); };
-    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name + '&t=' + Date.now();
-    document.body.appendChild(s);
-  }
+  var requestNumber = 0;
   function fetchLive(cb, errCb) {
-    var url = CONFIG.API_URL;
-    if (!url || url.indexOf('PASTE_') === 0) { errCb(new Error('No API_URL configured')); return; }
-    if (typeof fetch === 'function') {
-      fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now())
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(cb).catch(function () { jsonp(url, cb, errCb); });
-    } else { jsonp(url, cb, errCb); }
+    var request = ++requestNumber;
+    var selected = document.getElementById('prog').value || sessionStorage.getItem('mancomReport') || '';
+    Portal.api('data&report=' + encodeURIComponent(selected)).then(function (res) {
+      if (request !== requestNumber) return;
+      cb(res);
+    }).catch(function (err) { if (request === requestNumber) errCb(err); });
   }
+
   function fillProgrammes(keepIndex) {
     var sel = document.getElementById('prog');
+    var previous = sel.value;
     var want = keepIndex != null ? keepIndex : sel.selectedIndex;
     sel.innerHTML = '';
     PROGRAMMES.forEach(function (p) {
@@ -402,13 +396,13 @@
       sel.appendChild(o);
     });
     sel.selectedIndex = (want >= 0 && want < PROGRAMMES.length) ? want : 0;
-    applyScopeDefault();
+    if (previous !== sel.value) applyScopeDefault();
   }
   function applyScopeDefault() {
     var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
     if (!p) return;
     var s = norm(p.scope);
-    document.getElementById('scope').value = s === 'central' ? 'Area Headquaters' : (s === 'zonal' ? 'Zone' : 'all');
+    document.getElementById('scope').value = s === 'central' ? 'Area Headquaters' : (s === 'zonal' ? 'Zone' : (s === 'branch' ? 'Branch' : 'all'));
   }
   function finish(tag) {
     var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
@@ -416,25 +410,24 @@
       AREAS.length + ' areas on file \u00b7 from the ' + tag + ' \u00b7 ' + new Date().toLocaleString());
     paint();
   }
+  function clearView() {
+    AREAS = []; BRANCHES = []; RECORDS = []; paint(); Portal.details([]);
+  }
   function loadLive(silent) {
-    if (!silent) setStatus('Fetching the live Google Sheet\u2026');
+    clearView();
+    setStatus('Loading your report…');
     fetchLive(function (res) {
       try {
-        if (!res || res.ok === false) throw new Error(res && res.error ? res.error : 'Bad response');
-        PROGRAMMES = objects(res.programmes, MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
+        PROGRAMMES = objects(res.programmes, MAP_PROG, 'key');
         AREAS = objects(res.areas, MAP_AREA, 'area');
         BRANCHES = objects(res.branches, MAP_BRANCH, 'area');
-        if (!PROGRAMMES.length) throw new Error('No active programme found on the Programmes sheet');
-        fillProgrammes(null);
-        var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
-        var raw = res[p.key];
-        if (!raw || !raw.length) throw new Error('The live feed has no "' + p.key + '" responses yet');
-        RECORDS = objects(raw, MAP_RESP, 'area');
-        SOURCE = 'live'; finish('live sheet');
-      } catch (e) { setStatus('\u26a0 ' + e.message + ' \u2014 drop the workbook below to work offline', 'err'); }
-    }, function (err) {
-      setStatus('\u26a0 Live sheet unavailable (' + err.message + ') \u2014 drop the workbook below to work offline', 'err');
-    });
+        var selected = PROGRAMMES.findIndex(function (p) { return p.key === res.selectedReport; });
+        fillProgrammes(selected);
+        sessionStorage.setItem('mancomReport', res.selectedReport);
+        RECORDS = objects(res.records, MAP_RESP, 'area');
+        SOURCE = 'live'; finish('live sheet'); Portal.details(res.records);
+      } catch (e) { clearView(); setStatus(e.message, 'err'); }
+    }, function (err) { clearView(); setStatus(err.message, 'err'); });
   }
 
   /* -------- offline .xlsx fallback (unchanged reader) -------- */
@@ -516,7 +509,7 @@
             }
             if (v != null) {
               if (t === 's') v = sst[parseInt(v, 10)];
-              else if (t !== 'str' && t !== 'b') { var num = parseFloat(v); if (!isNaN(num)) v = num; }
+              else if (t !== 'str' && t !== 'b') { var num = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); if (!isNaN(num)) v = num; }
             }
           }
           arr[ci] = v;
@@ -531,7 +524,6 @@
 
   function findSheet(names, wanted) {
     for (var i = 0; i < names.length; i++) if (norm(names[i]) === norm(wanted)) return names[i];
-    for (var j = 0; j < names.length; j++) if (norm(names[j]).indexOf(norm(wanted)) === 0) return names[j];
     return null;
   }
   async function loadFromWorkbook(wb, keepIndex) {
@@ -539,17 +531,21 @@
     var ps = findSheet(n, 'Programmes'), as = findSheet(n, 'Areas'), bs = findSheet(n, 'Branches');
     if (!ps || !as || !bs) throw new Error('Workbook needs Programmes, Areas and Branches sheets. Found: ' + n.join(', '));
     PROGRAMMES = objects(await wb.rows(ps), MAP_PROG, 'key').filter(function (p) { return yes(p.active); });
-    AREAS = objects(await wb.rows(as), MAP_AREA, 'area');
-    BRANCHES = objects(await wb.rows(bs), MAP_BRANCH, 'area');
+    AREAS = objects(Portal.scope(await wb.rows(as)), MAP_AREA, 'area');
+    BRANCHES = objects(Portal.scope(await wb.rows(bs)), MAP_BRANCH, 'area');
     if (!PROGRAMMES.length) throw new Error('No programme on the Programmes sheet has Active set to YES');
     fillProgrammes(keepIndex);
     var p = PROGRAMMES[document.getElementById('prog').selectedIndex];
-    var rs = findSheet(n, p.sheet) || findSheet(n, 'Form responses 1');
+    var rs = findSheet(n, p.sheet);
     if (!rs) throw new Error('No sheet named "' + p.sheet + '" in this workbook');
-    RECORDS = objects(await wb.rows(rs), MAP_RESP, 'area');
-    SOURCE = 'file'; finish('uploaded workbook');
+    var offlineRows = Portal.scope(Portal.mapRows(await wb.rows(rs), p.mapping));
+    RECORDS = objects(offlineRows, MAP_RESP, 'area'); Portal.details(offlineRows);
+    SOURCE = 'file'; finish('local workbook — not saved to Google Sheets');
   }
   async function handleFile(file) {
+    if (!Portal.user) return;
+    ++requestNumber; clearView();
+    if (file.size > 10 * 1024 * 1024) { setStatus('Please use a workbook smaller than 10 MB.', 'err'); return; }
     setStatus('Reading ' + file.name + '\u2026');
     try {
       if (typeof DecompressionStream === 'undefined')
@@ -579,7 +575,7 @@
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   };
 
-  loadLive(false);
+  Portal.ready.then(function () { loadLive(false); }).catch(function () {});
   if (CONFIG.REFRESH_MINUTES > 0) setInterval(function () { loadLive(true); }, CONFIG.REFRESH_MINUTES * 60000);
 })();
 </script>
