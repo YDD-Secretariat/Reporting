@@ -9,7 +9,7 @@ http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/api/reporting'){
     req.query=Object.fromEntries(url.searchParams);let body='';
-    for await(const chunk of req){body+=chunk;if(body.length>20000){res.writeHead(413).end();return;}}
+    for await(const chunk of req){body+=chunk;if(body.length>60000){res.writeHead(413).end();return;}}
     try{req.body=body?JSON.parse(body):{};}catch{res.writeHead(400).end();return;}
     res.status=code=>{res.statusCode=code;return res;};res.json=data=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};
     return handler(req,res);
