@@ -1,0 +1,30 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {scopedTable,reportRows,directory,column} from '../public/modules/schema.js';
+import {analyse} from '../public/modules/feedback-model.js';
+import {createHandler} from '../lib/handler.js';import {signSession} from '../lib/session.js';
+const areas=[['Area','Aliases'],['Enugu Area','Enugu State'],['Anthony','Anthony group 2'],['Lagos North','LNA']];
+const user={email:'test@gmail.com',sub:'test',role:'area_secretary',area:'Enugu',emailAuthority:true};
+test('canonical suffix, case, punctuation and explicit aliases resolve without broad fuzzy matching',()=>{const d=directory(areas);assert.equal(d.resolve('ENUGU'),'Enugu Area');assert.equal(d.resolve(' Enugu Area. '),'Enugu Area');assert.equal(d.resolve('Enugu State'),'Enugu Area');assert.equal(d.resolve('LNA'),'Lagos North');assert.equal(d.resolve('Lagos'),null);assert.equal(d.resolve('09079831759'),null);});
+test('alias collisions withhold rather than widening access',()=>{const d=directory([['Area','Aliases'],['Enugu','Common'],['Anthony','Common']]);assert.equal(d.resolve('Common'),null);});
+test('different headers and title rows are detected before enforcing area',()=>{const input=[['Programme feedback'],['Area (e.g Kwara Area)','Overall, how would you rate the programme?'],['Enugu','Excellent'],['Anthony','Poor']];const s=scopedTable(input,areas,user);assert.equal(s.rows.length,1);assert.equal(s.rows[0].area,'Enugu Area');});
+test('missing or duplicate area fields never return unfiltered records to area users',()=>{for(const h of [['Unknown'],['Area','Area']])assert.equal(scopedTable([h,['secret','secret']],areas,user).rows.length,0);});
+test('unmatched areas are admin-only and administrator review is explicit',()=>{const input=[['Area','Rating'],['Lagos',3],['',4],['Enugu Area',5]];const own=scopedTable(input,areas,user);assert.equal(own.rows.length,1);assert.equal(own.unmatched.length,0);const admin=scopedTable(input,areas,{role:'admin'});assert.equal(admin.rows.length,3);assert.equal(admin.unmatched.length,2);});
+test('male/female totals, narrative fields, invalid counts and notes in mapping do not crash',()=>{const s=scopedTable([['Area','Male','Female','Total','Programme summary'],['Enugu',10,20,'not recorded','Long narrative']],areas,user,'Every branch reports');const r=reportRows(s,'Every branch reports');assert.equal(r.records[1][6],10);assert.equal(r.records[1][7],20);assert.equal(r.records[1][9],'');assert(r.warnings.length>0);});
+test('feedback means use valid answers only and count participants independently',()=>{const headers=['Area','Overall, how would you rate the programme?','Session A','Final Recommendation'];const rows=[{area:'A',values:['A','Excellent','Poor','Keep the programme largely as it is']},{area:'A',values:['A','','Excellent','Change some modalities']},{area:'B',values:['B','Good','Good','Reconsider and change the programme entirely']}];const m=analyse(headers,rows);assert.equal(m.n,3);assert.equal(m.overall.n,2);assert.equal(m.overall.mean,4.5);assert.equal(m.recommendations.Tune,1);assert.equal(m.questions[1].n,3);});
+test('empty and unknown feedback retain safe empty states',()=>{assert.equal(analyse(['Any question'],[]).n,0);assert.equal(analyse(['Any question'],[{values:['Unusual answer']}]).overall,null);});
+test('feedback endpoint, auto discovery, export input and roster never expose another area',async()=>{
+ process.env.SESSION_SECRET='test-key-012345678901234567890123456789';process.env.GOOGLE_SHEET_ID='book';
+ const sheet={Users:[['Email','Name','Role','Area','Active'],['test@gmail.com','Test','area_secretary','Enugu','YES']],Programmes:[['Key','Sheet name','Label','Scope','Active','Type'],['fb','Feedback - Camp','Camp','all','YES','feedback']],Areas:areas,Branches:[['Area','Branch'],['Enugu','A'],['Anthony','B']],'Feedback - Camp':[['Area (e.g Kwara Area)','Overall, how would you rate the programme?'],['Enugu Area','Excellent'],['Anthony','Poor']]};
+ const h=createHandler({readSheets:async names=>names.map(n=>sheet[n]),listSheets:async()=>['Feedback - Camp','Feedback - New']});
+ const req={query:{action:'feedback',report:'fb',area:'Anthony'},method:'GET',headers:{cookie:'mancom_session='+signSession(user)}};const res=()=>({setHeader(){},status(c){this.code=c;return this;},json(d){this.data=d;}});
+ let r=res();await h(req,r);assert.equal(r.code,200);assert.equal(r.data.rows.length,1);assert.equal(r.data.rows[0].values[1],'Excellent');assert(!JSON.stringify(r.data.rows).includes('Anthony'));
+ r=res();await h({...req,query:{action:'catalog'}},r);assert.equal(r.data.reports.filter(p=>p.type==='feedback').length,2);
+ r=res();await h({...req,query:{action:'roster'}},r);assert.equal(r.data.areas.length,2);
+});
+test('a response row cannot impersonate headings when the first row has an unknown area column',()=>{const input=[['Unusual territory','Person'],['Area','Name'],['Anthony','Enugu']];assert.equal(scopedTable(input,areas,user).rows.length,0);});
+test('feedback fractional numbers are not silently rounded into rating categories',()=>{const m=analyse(['Overall rating'],[{values:[4.5]}]);assert.equal(m.overall,null);});
+test('inactive named Feedback tabs do not reappear through discovery',async()=>{
+ process.env.SESSION_SECRET='test-key-012345678901234567890123456789';process.env.GOOGLE_SHEET_ID='book';
+ const h=createHandler({readSheets:async names=>names.map(n=>n==='Users'?[['Email','Name','Role','Area','Active'],['test@gmail.com','Test','area_secretary','Enugu','YES']]:[['Key','Sheet name','Active','Type'],['hidden','Feedback - Hidden','NO','feedback']]),listSheets:async()=>['Feedback - Hidden','Feedback - Visible']});
+ const r={setHeader(){},status(c){this.code=c;return this;},json(d){this.data=d;}};await h({query:{action:'catalog'},method:'GET',headers:{cookie:'mancom_session='+signSession(user)}},r);assert.equal(r.code,200);assert.deepEqual(r.data.reports.map(x=>x.label),['Visible']);
+});
