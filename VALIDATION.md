@@ -1,55 +1,44 @@
-# Validation record
+# Version 4 readiness validation — 11 October 2026
 
-Validated locally on 9 October 2026. Live workbook and Google account credentials were not supplied.
+Chromium browser checks passed for publishing, page and logo loading, mobile width (390 px), area submission, success acknowledgement, WhatsApp target and closed-link rejection. The leader page was visually inspected. No uncaught page errors occurred in these flows.
 
-## Automated backend checks — 16 passed
+37 automated tests pass. Six added tests cover template validation, draft/publication separation, exact expiry, closure, stale revisions, area spoofing, private admin responses, invalid answers, role checks, authentication, origin checks and JSON content type. Build checks and JavaScript syntax checks pass. Google writes are mocked in automated tests; real service-account Editor access and Vercel deployment still require the go-live check in READINESS-SETUP.md.
 
-`npm test` verifies the real request handler with mock Google services:
+# Version 3 validation — 10 October 2026
 
-1. Unauthenticated data request is rejected.
-2. Area-scoped responses exclude other-area rows across all private datasets; query role/area spoofing has no effect.
-3. Administrator sees all areas.
-4. Switching reports changes the response sheet; unknown keys fail.
-5. Disabling a user revokes an already-issued session at the next request.
-6. Missing area assignment and unknown roles fail closed.
-7. Verified Google account subject must match the enrolled subject.
-8. Missing Area headers do not fall through to unfiltered data.
-9. Headers-only reports represent zero submissions correctly.
-10. Tampered and expired sessions fail.
-11. Sensitive system sheets and duplicate report keys cannot enter the report registry.
-12. Alternate report headings can map to Area and Total before filtering.
-13. Cross-origin login/logout fail.
-14. Verified login with the correct nonce issues an HttpOnly secure cookie.
-15. Wrong nonce fails.
-16. API responses disable caching; report writes are rejected.
+## Automated checks
 
-`npm run build` parses every HTML inline script and checks that legacy Apps Script URLs/password parameters are absent from the public pages.
+`npm test`: 31 tests passed. `npm run build`: all page scripts parse and no legacy Apps Script endpoints remain in public pages.
 
-## Browser checks — passed with synthetic API fixtures
+Tests cover authentication, verified email-only enrolment, session integrity, revocation, role spoofing, server-side area isolation, report switching, protected system tabs, header mapping, safe area aliases and collisions, ambiguous/missing area fields, unknown numeric values, feedback denominators, inactive feedback discovery, and malicious response rows that resemble headings.
 
-Actual headless Chromium loaded the updated pages and exercised:
+## Supplied-file and browser checks
 
-- Area cards and missing-branch display.
-- Switching from Back to School to a second programme with different totals.
-- Switching to a report with zero submissions.
-- Keeping selected report across navigation to the dashboard.
-- Dashboard attendance aggregation.
-- Mobile width of 390 px without page overflow.
-- PNG export producing a downloadable PNG file using bundled html2canvas.
-- Local XLSX import containing two areas: only the signed-in area rendered.
-- Returning to live data after importing a workbook with a different report key.
-- Sign-out and redirect of protected page data access.
-- No uncaught page JavaScript errors in these flows.
+During this build, the supplied master report, Teenage Weekend and Youth Weekend datasets were inspected and exercised with the shared schema normaliser. The two Teenage Weekend response datasets were duplicates.
 
-Desktop cards, dashboard, login and mobile dashboard screenshots were visually inspected. Browser fixtures replaced Google sign-in and Sheets API responses; they did not exercise a real Google account or spreadsheet. Print controls and WhatsApp links are preserved, but no printer output or actual WhatsApp delivery was attempted.
+All six Microsoft Forms exports were exercised through the browser importer and feedback API fixtures with these response counts:
 
-## Deployment acceptance still required
+| Feedback | Rows |
+| --- | ---: |
+| Beyond Butterflies | 92 |
+| Back to School | 32 |
+| Saturday Night With Jesus | 7 |
+| Power of Giving | 29 |
+| International Youth Camp | 78 |
+| Apopreneur & Youth Weekend | 15 |
 
-- Real Google OAuth client/domain configuration and real user enrolment.
-- Real service-account read permissions and actual reporting workbook schemas.
-- Vercel deployment/build and routing in the user's project.
-- Real-account area-isolation checks and disabling the old public Apps Script access path.
-- Phone/device-specific print behaviour and export experience.
-- Production traffic/load, Google API quotas and very large workbook behaviour.
+Chromium checks used the real request handler with mocked Google services and the supplied datasets. They covered source switching, all six local XLSX imports, report cards, activity filtering, report dashboard, administrator and Enugu-only feedback, area-restricted local imports, PowerPoint downloads, and desktop/mobile layouts at 390 px without horizontal overflow. No uncaught page errors occurred in these exercised flows.
 
-The Google Sheet itself was not attached. Column mappings derive from the supplied HTML and Code.gs, so new or differing form layouts must be registered in Programmes as described in DEPLOYMENT.md.
+Administrator and area-user PowerPoint files were generated. Export XML was checked for area isolation, and representative scorecard and heatmap slides were rendered using LibreOffice and visually inspected. Microsoft PowerPoint itself was not available for a native application check. The later addition of comparison-table slides has not received a separate visual render review.
+
+These checks establish compatibility with the supplied formats; they do not guarantee semantic recognition of every future survey. Unknown questions stay inspectable, while ambiguous area assignments are withheld from area users. See START-HERE.md for mappings and aliases.
+
+## Production acceptance still required
+
+No live Vercel project, Google OAuth account, or production Google workbook was modified. Browser fixtures do not verify real credentials or deployment configuration.
+
+After deployment, verify Google sign-in, service-account sheet access, the exact source-tab names, one administrator account and one area account, disabled-user revocation, and exports on your target devices. Review unresolved area names and retire any old publicly accessible reporting endpoint.
+
+Google Sheets refresh and Microsoft Forms synchronisation are separate: this build polls its selected Google source; an Excel export remains a snapshot until you import or externally synchronise newer responses. No Microsoft Forms connector is included.
+
+Private source workbooks, browser screenshots, generated sample decks, credentials and node_modules are excluded from the distributed ZIP.
