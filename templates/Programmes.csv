@@ -1,4 +1,3 @@
-Key,Sheet name,Label,Scope,Active,Column Map,Kind
-backToSchool,BACK TO SCHOOL 2026,Back to School 2026,all,YES,,report
-youthCamp2026,YOUTH CAMP 2026,Youth Camp 2026,all,NO,,report
-teenageWeekend,Form responses 1,Teenage Weekend 2026,all,YES,,report
+Key,Sheet name,Label,Scope,Active,Column Map
+backToSchool,BACK TO SCHOOL 2026,Back to School 2026,all,YES,
+youthCamp2026,YOUTH CAMP 2026,Youth Camp 2026,all,NO,

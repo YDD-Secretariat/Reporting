@@ -1,0 +1,4 @@
+Key,Sheet Name,Label,Scope,Active,Column Map,Type,Audience,Notes
+backToSchool,Response,Back to School 2026,all,YES,,report,,Existing master response tab
+teenage2026,Report - Teenage 2026,Teenage Weekend and Concert 2026,all,NO,,report,,Import the response tab first then enable
+youth2026,Report - Youth 2026,Youth Weekend 2026,all,NO,,report,,Import the response tab first then enable

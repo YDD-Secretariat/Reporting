@@ -1,0 +1,4 @@
+Key,Sheet Name,Label,Scope,Active,Column Map,Notes
+backToSchool,Response,Back to School 2026,branch,YES,,Every branch reports
+teenageConf,TEENAGE CONFERENCE 2026,Teenage Conference 2026,central,NO,,Enable only after response tab exists
+reachOut,AFCMF REACH OUT 2026,AFCMF Reach Out 2026,zonal,NO,,Enable only after response tab exists
