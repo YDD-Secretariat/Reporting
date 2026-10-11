@@ -1,29 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MANCOM · Sign in</title>
-<link rel="stylesheet" href="/portal.css">
-<style>
-  body { display:flex; min-height:100vh; align-items:center; justify-content:center; background:var(--bg,#F6F5F1); }
-  .card { background:#fff; border:1px solid #DDE3DE; border-radius:16px; padding:36px 32px; max-width:420px; width:92%; box-shadow:0 18px 40px #123d3012; }
-  h1 { font-family:Arial,Helvetica,sans-serif; font-size:24px; margin:0 0 8px; color:#12433A; }
-  p { color:#5C6863; font-size:14px; line-height:1.5; }
-  #google-button { margin:22px 0 12px; display:flex; justify-content:center; }
-  #message { font-size:13px; color:#5C6863; min-height:1.4em; }
-  #account { display:none; margin-top:14px; padding:12px; background:#f6f8f7; border-radius:8px; font-size:12px; white-space:pre-wrap; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <div style="font-family:Arial;font-size:11px;font-weight:700;color:#1B5C4F;letter-spacing:.06em;margin-bottom:6px">MANCOM REPORTING</div>
-    <h1>Sign in</h1>
-    <p>Use the Google account registered by the secretariat. Enrolment is email-based — no per-user ID copy step.</p>
-    <div id="google-button"></div>
-    <div id="message"></div>
-    <div id="account"></div>
-  </div>
-  <script src="/login.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in · MANCOM Reporting</title><link rel="stylesheet" href="/portal.css"><style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}.intro{background:linear-gradient(145deg,#082e27,#176b55);color:white;padding:clamp(28px,6vw,95px);display:flex;flex-direction:column;justify-content:center}.brand{font-size:13px;letter-spacing:.12em;color:#b8dacf}.intro h1{font-size:clamp(38px,5vw,66px);line-height:1.05;letter-spacing:-2.5px;max-width:600px}.intro p{color:#d1e5dc;max-width:470px;font-size:17px}.line{margin-top:42px;border-top:1px solid #ffffff33;padding-top:24px;font-size:12px;letter-spacing:.06em}.form{display:flex;align-items:center;justify-content:center;padding:30px}.loginbox{max-width:410px;width:100%}.tag{color:#176b55;font-size:11px;font-weight:800;letter-spacing:.13em}.loginbox h2{font-size:32px;letter-spacing:-1px;margin-bottom:10px}.loginbox p{color:#5e7068}.signarea{border:1px solid #dce6e0;border-radius:16px;background:white;padding:26px;margin-top:28px}.help{font-size:12px;margin-top:24px}#message{font-size:14px;overflow-wrap:anywhere}#account{display:none;background:#e8efeb;padding:15px;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}button.retry{padding:10px 16px;margin-top:12px;background:#103f36;color:white;border:0;border-radius:8px;cursor:pointer}@media(max-width:740px){body{grid-template-columns:1fr}.intro{padding:35px}.intro h1{font-size:39px;margin:25px 0 15px}.line{margin-top:15px}.form{padding:35px 24px}}
+</style></head><body><section class="intro"><div class="brand">MANCOM / WECA YOUTH DEPARTMENT</div><h1>Every report.<br>A clearer picture.</h1><p>Follow submissions, see outstanding locations, and keep your area informed throughout the year.</p><div class="line">AREA REPORTS &nbsp; / &nbsp; PROGRAMMES &nbsp; / &nbsp; INSIGHTS</div></section><main class="form"><div class="loginbox"><div class="tag">SECRETARIAT PORTAL</div><h2>Welcome back.</h2><p>Sign in with the Google account registered by your secretariat administrator.</p><div class="signarea"><div id="google-button"></div><p id="message" role="status" aria-live="polite">Preparing secure sign-in…</p><button class="retry" onclick="location.reload()">Reload sign-in</button></div><p class="help">Area leaders and secretaries see reports for their assigned area. Administrators have an overview of all areas.</p></div></main><script src="/login.js"></script></body></html>
