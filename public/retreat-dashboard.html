@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Readiness Dashboard · YDD</title>
+<style>
+:root{--navy:#132b4a;--blue:#245a87;--bg:#f4f6f9;--card:#fff;--ink:#1e293b;--muted:#64748b;--green:#24764c;--amber:#a66b00;--red:#b42318;--line:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{background:linear-gradient(120deg,#132b4a,#245a87);color:white;padding:26px clamp(16px,4vw,52px)}
+header .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;font-weight:700}
+h1{margin:6px 0 4px;font-size:clamp(23px,3vw,34px);line-height:1.2}header p{margin:0;color:#dbeafe}
+.wrap{max-width:1440px;margin:auto;padding:24px clamp(12px,3vw,36px) 48px}
+.notice{background:#fff8e7;border:1px solid #f0d99a;border-radius:10px;padding:12px 15px;margin-bottom:18px;color:#684c00}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:17px;box-shadow:0 2px 7px #10233b08}
+.kpi-label{font-size:12px;color:var(--muted);font-weight:600}.kpi-value{font-size:28px;font-weight:750;letter-spacing:-.04em;margin-top:5px;color:var(--navy)}.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-bottom:18px}.section-title{font-size:16px;margin:0 0 12px;color:var(--navy)}
+.bar-row{display:grid;grid-template-columns:115px 1fr 35px;gap:9px;align-items:center;margin:10px 0;font-size:12px}.track{height:9px;background:#e9eef4;border-radius:20px;overflow:hidden}.fill{height:100%;border-radius:20px;background:#2c6c9d}.fill.warn{background:#d7a238}.fill.good{background:#27845a}
+.alert{border-left:3px solid #c88720;padding:8px 10px;background:#fffaf0;border-radius:4px;margin:7px 0;font-size:12px}.alert.red{border-left-color:#bd352b;background:#fff4f2}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 14px}.filters input,.filters select{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 11px;font:inherit;color:var(--ink)}.filters input{min-width:220px;flex:1}
+.btn{border:0;border-radius:8px;padding:10px 13px;font:600 12px inherit;cursor:pointer;background:var(--navy);color:#fff}.btn.secondary{background:#e8eef5;color:var(--navy);border:1px solid #d6e0ea}.btn:hover{filter:brightness(1.06)}
+.table-wrap{overflow:auto;background:white;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:1020px;font-size:12px}th{text-align:left;background:#eef3f8;color:#34465c;padding:11px 10px;position:sticky;top:0;white-space:nowrap}td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:top}tr:hover td{background:#fafcff}.area-name{font-weight:700;color:var(--navy);cursor:pointer}.area-name:hover{text-decoration:underline}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;white-space:nowrap}.ready{background:#e3f4e9;color:#17623b}.progress{background:#fff1d6;color:#8b5b00}.critical{background:#fde7e5;color:#a3221a}.unknown{background:#edf0f4;color:#526174}.muted{color:var(--muted)}.small{font-size:11px}
+.detail{display:none;position:fixed;inset:0;background:#0b1d32a8;z-index:10;padding:18px;overflow:auto}.detail.show{display:flex;align-items:flex-start;justify-content:center}.modal{background:white;border-radius:15px;width:min(850px,100%);margin:20px auto;padding:22px;box-shadow:0 15px 60px #0003}.modal-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.close{background:#edf2f7;color:#24364d;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.detail-box{background:#f7f9fc;border:1px solid var(--line);border-radius:9px;padding:12px}.detail-box h3{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}.detail-box p{margin:0}.worklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.workitem{border:1px solid var(--line);border-radius:8px;padding:9px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+@media(max-width:540px){.kpis{gap:8px}.card{padding:13px}.kpi-value{font-size:24px}.detail-grid,.worklist{grid-template-columns:1fr}.bar-row{grid-template-columns:90px 1fr 30px}}
+@media print{header{background:#132b4a!important;print-color-adjust:exact}.filters,.btn,.detail{display:none!important}.wrap{max-width:none;padding:10px}.card{box-shadow:none}.table-wrap{overflow:visible}table{min-width:0;font-size:8px}th,td{padding:5px}}
+
+.auth-pending main{visibility:hidden}.auth-error{margin:20px;padding:14px;background:#fde7e5;border-radius:10px;color:#a3221a}
+.sessionbar{padding:10px clamp(16px,4vw,52px);background:#0b1f4b;color:#fff;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px}.sessionbar span{flex:1}.sessionbar button,.sessionbar select{font:inherit;padding:6px 10px;border-radius:6px;border:1px solid #ffffff55;background:#ffffff18;color:#fff}.sessionbar option{color:#111}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.toolbar .grow{flex:1}.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:50%;background:#27845a;animation:p 2s infinite}.dot.off{background:#b42318;animation:none}@keyframes p{50%{opacity:.3}}
+.pill.complete{background:#d9f2e4;color:#175c39}.pill.notans{background:#edf0f4;color:#526174}
+.flag{font-size:12px;margin:4px 0;padding-left:14px;position:relative}.flag:before{content:"!";position:absolute;left:0;color:#a66b00;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{background:#eef3f8;border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12px}
+.seg{display:flex;height:9px;border-radius:20px;overflow:hidden;background:#e9eef4}.seg i{display:block;height:100%}
+pre.long{white-space:pre-wrap;font:inherit;margin:0}
+</style>
+<script src="/portal.js" defer></script><script src="/retreat-dashboard.js" defer></script></head>
+<body class="auth-pending">
+<div class="sessionbar"><span id="identity"></span><button id="signout">Sign out</button></div>
+<header><div class="eyebrow">National leadership · Live operations overview</div><h1 id="title">Readiness dashboard</h1><p id="subtitle">Area readiness, attendance, budgets and outstanding actions</p></header>
+<main class="wrap">
+<div class="toolbar"><label class="muted small">Checklist <select id="pageSel" style="padding:8px;border-radius:8px;border:1px solid #cbd5e1"></select></label><span class="grow"></span><span class="live"><span class="dot" id="dot"></span><span id="stamp">Loading…</span></span><button class="btn secondary" id="refresh">Refresh now</button></div>
+<div class="notice" id="notice">Loading live submissions…</div>
+<section class="kpis" id="kpis"></section>
+<section class="grid2">
+<div class="card"><h2 class="section-title">Workstream readiness</h2><div id="workChart"></div><div class="small muted">Workstreams are read from the published checklist; each area's latest update counts.</div></div>
+<div class="card"><h2 class="section-title">Leadership attention</h2><div id="alerts"></div></div>
+</section>
+<section class="card" style="margin-bottom:18px"><h2 class="section-title">Areas yet to report <span class="muted small" id="pendingCount"></span></h2><div class="chips" id="pending"></div></section>
+<section class="card" style="margin-bottom:18px"><h2 class="section-title">Expected attendance by area</h2><div id="attendanceChart"></div></section>
+<section class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h2 class="section-title" style="margin-bottom:2px">Area register</h2><div class="small muted">Select an area name to open its detailed status.</div></div><div><button class="btn secondary" id="csv">Export CSV</button> <button class="btn secondary" onclick="window.print()">Print / Save PDF</button></div></div>
+<div class="filters"><input id="search" placeholder="Search area, coordinator or venue…"><select id="statusFilter"><option value="">All reported statuses</option></select><select id="workFilter"><option value="">All workstreams</option></select><select id="riskFilter"><option value="">All risk levels</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Complete</option></select></div>
+<div class="table-wrap"><table><thead><tr><th>Area</th><th>Coordinator</th><th>Attendance</th><th>Reported status</th><th>Ready</th><th>Open</th><th>Budget figure</th><th>Dry run</th><th>Risk</th><th>Updated</th></tr></thead><tbody id="areaRows"></tbody></table></div>
+<p id="rowCount" class="small muted"></p></section>
+<footer>Internal planning dashboard · Data is self-reported by areas, not independently verified. Risk = 2×Not ready + In progress workstreams (+3 if overall “Not Ready”; one level up once the dry-run date arrives): Low 1, Medium 2–3, High 4–5, Critical 6+.</footer>
+</main>
+<div class="detail" id="detail"><div class="modal"><div class="modal-head"><div><div class="eyebrow muted">Area detail</div><h2 id="dTitle" style="margin:4px 0;color:#132b4a"></h2><div id="dSub" class="muted"></div></div><button class="close" id="dClose">Close ✕</button></div><div id="dContent"></div></div></div>
+</body></html>
